@@ -1,0 +1,9 @@
+[project]
+name = "taxonomy-time-machine"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "taxonomy>=0.10.0",
+]
