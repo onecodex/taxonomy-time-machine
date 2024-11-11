@@ -1,0 +1,29 @@
+version = 1
+requires-python = ">=3.11"
+
+[[package]]
+name = "taxonomy"
+version = "0.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/1d/92db661b76e3fd6b34ef3e4dff1b861f89e702520e7420df2f68158d9944/taxonomy-0.10.0.tar.gz", hash = "sha256:3ff7e2299c9554b8b8be2f00bb4cd9722d0ae820e8a271aaf1390a7e790c3f51", size = 109626 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/79/93/979d8b702537269f668cabbe66561fe42b5c494cc8523c14f880e597b9a2/taxonomy-0.10.0-cp311-cp311-macosx_10_7_x86_64.whl", hash = "sha256:539845bf5dbe767bd7732c6c3d67f1f5bcb638b900cda35de39edb7508c09f97", size = 436870 },
+    { url = "https://files.pythonhosted.org/packages/0d/ba/e4c6a5ba24e4457a625ba4e1e2b0ad18245f2d9f23f33effe199a4b0fb4b/taxonomy-0.10.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:27ffdfa76e5f7e087e399874fb97749a9424098b428521b194b7bffcebb68a4a", size = 406123 },
+    { url = "https://files.pythonhosted.org/packages/cc/19/8e3e2cc576ba3e1138b35159d1fa0e1f308a3b1f2afcd2d5920e707f101b/taxonomy-0.10.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3322570e8a484d16577d01bf33afebfdd888e7e669d0a9ad04a53efdc58a49a3", size = 419928 },
+    { url = "https://files.pythonhosted.org/packages/e3/fd/4d4c9115283c2c6ab5800b50b51b975f625364ce54546f8cabc961f4a757/taxonomy-0.10.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:729288ccb9bd4a66eeb3a167cd39f09fec21fe11670816c9e9704d0504610962", size = 455489 },
+    { url = "https://files.pythonhosted.org/packages/09/8d/6ff03977e6d4d334f332f7534ed0545373ce066d832c676a7d448b202af6/taxonomy-0.10.0-cp312-cp312-macosx_10_7_x86_64.whl", hash = "sha256:4d4ad08f69aa079b2de4ee6b258aead01f9dfdd457f703a4b005760341dcbc64", size = 441780 },
+    { url = "https://files.pythonhosted.org/packages/5c/e2/dee99f70d17d55be62531201872a63cad2d7dbd50911bc1cb62f44feca2b/taxonomy-0.10.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:1f3ab6624c028ff91a2f4a80412b2cde7d3e08874c487e9ecf23f8b69b1ea598", size = 414530 },
+    { url = "https://files.pythonhosted.org/packages/d4/7a/5c66db1cf91838030f3576284ede428cbc24b85c5c2d503422ff8e77aa0c/taxonomy-0.10.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b39971af038adf49960986664b9ee678c578bdd694ce551299a82173ef88cfb7", size = 450174 },
+    { url = "https://files.pythonhosted.org/packages/88/f7/dfa6d9d1980649c0ed9ca8c76407a55d6a4afcf17da412f0e06624af5b54/taxonomy-0.10.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a15ab3d2bfb01791d7751f02b395f960863f5fe9af174bc5e505e190d34bd889", size = 455488 },
+]
+
+[[package]]
+name = "taxonomy-time-machine"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "taxonomy" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "taxonomy", specifier = ">=0.10.0" }]
