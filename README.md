@@ -1,20 +1,32 @@
 # taxonomy-time-machine
 
-## Data Structure
+## TODO:
 
-### Compressed Taxonomy Table
+- [x] Data Structure
+- [ ] Queries
+    - [ ] Fetch current lineage
+    - [ ] Fetch current children/descendants
+    - [ ] Fetch node history
+- [ ] API
+- [ ] Front End
+
+## Data Structure
 
 ### Change Log
 
-1. Easier to see what's happening
-2. Ability to capture events like `DELETED`, `MERGED`, and `RENAMED`
-3. More difficult to create (need to compare previous event)
-4. Must be created _ab initio_ each time
-
 ```
-event_name,version,tax_id,name,rank,parent_id,merged_tax_id
-CREATED,1,9606,homo sapiens,species,9605
-RENAMED,2,9606,homo sapiens2,species,9607
-MERGED,...
-DELETED,...
+event_name,version,tax_id,parent_id,rank,name
+create,dumps/taxdmp_2014-08-01,1418784,687330,genus,Cotaena
+create,dumps/taxdmp_2014-08-01,1418785,1418784,species,Cotaena plenella
+create,dumps/taxdmp_2014-08-01,418784,5475,species,Candida pseudohaemulonii
+alter,dumps/taxdmp_2014-09-01,418784,1540022,species,Candida pseudohaemulonii
+alter,dumps/taxdmp_2016-09-01,418784,1540022,species,[Candida] pseudohaemulonii
+alter,dumps/taxdmp_2018-04-01,418784,1540022,species,[Candida] pseudohaemulonis
+create,dumps/taxdmp_2018-11-01,2418784,1333472,species,Tanypodinae sp. BIOUG25744-B06
+alter,dumps/taxdmp_2021-04-01,418784,1540022,species,[Candida] pseudohaemulonii
+alter,dumps/taxdmp_2022-03-01,418784,36910,species,[Candida] pseudohaemulonii
+alter,dumps/taxdmp_2022-05-01,418784,2937349,species,[Candida] pseudohaemulonii
+alter,dumps/taxdmp_2022-08-01,418784,2964429,species,[Candida] pseudohaemulonii
+alter,dumps/taxdmp_2024-06-01,418784,2964429,species,[Candida] pseudohaemuli
+alter,dumps/taxdmp_2024-09-01,418784,3303203,species,Candidozyma pseudohaemuli
 ```
