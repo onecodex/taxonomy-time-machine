@@ -6,8 +6,5 @@ default: events.db
 dumps:
 	scripts/fetch-data.sh
 
-events.csv: dumps
-	scripts/create-events-csv.py
-
-events.db: events.csv
-	scripts/load-data.sh
+events.db: dumps
+	scripts/load-data.py

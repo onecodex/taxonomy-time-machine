@@ -2,6 +2,28 @@ version = 1
 requires-python = ">=3.11"
 
 [[package]]
+name = "colorama"
+version = "0.4.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44", size = 27697 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335 },
+]
+
+[[package]]
+name = "polars"
+version = "1.13.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/33/6c5028a3a3253a89b73d8398b52ea357876340b5e5c6bca91633db251dad/polars-1.13.1.tar.gz", hash = "sha256:a8a7bb70aca0657939552a4505eccabb07c9d59d330d5a66409fe67295082860", size = 4125025 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ca/73/b6db1017f0f80290b408f7576886115ab7c26d98b137bb7c8d20333c1154/polars-1.13.1-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:9d5c74229fdc180fdbe99e4dc121a2ce0de6f0fcea2769a208f033112d5729dd", size = 34183338 },
+    { url = "https://files.pythonhosted.org/packages/6e/ec/5d4b0f6cdbd63b75913bae18f2abc1b30f4e776eab00d646f282bd405aeb/polars-1.13.1-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:faa436c721179fca978a470ade1072acc5e510396a88ce7e3aa4fcc75186739f", size = 30092667 },
+    { url = "https://files.pythonhosted.org/packages/ce/e8/9fd44ad4c091f911724f4cbe34f960c2e8016391e88f4da75ab0a2b83493/polars-1.13.1-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:405826a78c20721d0f47ee58bafdbd5311551c306cc52ff2e8dc0e2f5fc53d07", size = 35422073 },
+    { url = "https://files.pythonhosted.org/packages/67/4e/a337779a9653ff271ef57484fba9e298c9be4ddcedd422ea1eb9fdaae65a/polars-1.13.1-cp39-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:792d9de49de6ebcfb137885e1643e09b35bcad1ae3bc86971f0d82a06372e1a4", size = 31798082 },
+    { url = "https://files.pythonhosted.org/packages/45/25/b37b81c70595d1eda0f2c62b2e9163243168cf6a8c888f3836473e172083/polars-1.13.1-cp39-abi3-win_amd64.whl", hash = "sha256:060148c687920c7af2dc16a9de0aa6de293233f1a2634db503c497504fdb19ad", size = 35171062 },
+]
+
+[[package]]
 name = "taxonomy"
 version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
@@ -22,8 +44,26 @@ name = "taxonomy-time-machine"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "polars" },
     { name = "taxonomy" },
+    { name = "tqdm" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "taxonomy", specifier = ">=0.10.0" }]
+requires-dist = [
+    { name = "polars", specifier = ">=1.13.1" },
+    { name = "taxonomy", specifier = ">=0.10.0" },
+    { name = "tqdm", specifier = ">=4.67.0" },
+]
+
+[[package]]
+name = "tqdm"
+version = "4.67.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "platform_system == 'Windows'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e8/4f/0153c21dc5779a49a0598c445b1978126b1344bab9ee71e53e44877e14e0/tqdm-4.67.0.tar.gz", hash = "sha256:fe5a6f95e6fe0b9755e9469b77b9c3cf850048224ecaa8293d7d2d31f97d869a", size = 169739 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2b/78/57043611a16c655c8350b4c01b8d6abfb38cc2acb475238b62c2146186d7/tqdm-4.67.0-py3-none-any.whl", hash = "sha256:0cd8af9d56911acab92182e88d763100d4788bdf421d251616040cc4d44863be", size = 78590 },
+]

@@ -2,18 +2,25 @@
 
 from pathlib import Path
 from collections import Counter
+from tqdm import tqdm
 import taxonomy
 from datetime import datetime
-import csv
 
 from dataclasses import dataclass
 from enum import Enum
 
+import sqlite3
+
 # iterate over tax_id, parent_id, name, rank
+
+
+def dump_path_to_datetime(dump_path: Path):
+    return datetime.strptime(dump_path.name.split("_")[1], "%Y-%m-%d")
+
 
 taxdumps = sorted(
     [p for p in Path("dumps").glob("*") if p.is_dir()],
-    key=lambda p: datetime.strptime(p.name.split("_")[1], "%Y-%m-%d"),
+    key=dump_path_to_datetime,
 )
 
 # tax_id -> node dict
@@ -40,10 +47,10 @@ n_events = 0
 
 tax_id_to_node: dict = {}
 
-out_handle = open("events.csv", "w")
-writer = csv.writer(out_handle)
+data_to_insert = []
 
-for n, taxdump in enumerate(taxdumps):
+for n, taxdump in enumerate(taxdumps[::20]):
+    taxdump_date = dump_path_to_datetime(taxdump)
     tax = taxonomy.Taxonomy.from_ncbi(str(taxdump))
 
     # TODO: also load merged.dmp and delnodes.dmp
@@ -100,15 +107,15 @@ for n, taxdump in enumerate(taxdumps):
 
     for event in events:
         event_counts[event.event_name] += 1
-        writer.writerow(
-            [
-                event.event_name.value,
-                str(taxdump),
-                event.id,
-                event.parent_id,
-                event.rank,
-                event.name,
-            ]
+        data_to_insert.append(
+            {
+                "event_name": event.event_name.value,
+                "version_date": taxdump_date,
+                "tax_id": event.id,
+                "parent_id": event.parent_id,
+                "rank": event.rank,
+                "name": event.name,
+            }
         )
         n_events += 1
 
@@ -120,4 +127,51 @@ for n, taxdump in enumerate(taxdumps):
     print()
 
 
-out_handle.close()
+# Connect to the SQLite database
+conn = sqlite3.connect("events.db")
+cursor = conn.cursor()
+
+# Optimized PRAGMA settings for faster inserts
+cursor.execute("PRAGMA synchronous = OFF;")
+cursor.execute("PRAGMA journal_mode = MEMORY;")
+cursor.execute("PRAGMA temp_store = MEMORY;")
+
+
+# Create the table with appropriate types
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS taxonomy (
+    event_name TEXT,
+    version_date DATETIME,
+    tax_id INTEGER,
+    parent_id INTEGER,
+    rank TEXT,
+    name TEXT
+)
+""")
+
+# Batch insert using transactions and executemany
+batch_size = 10_000  # Insert 10,000 rows at a time
+
+# Loop through data in batches to avoid memory overload
+for i in tqdm(range(0, len(data_to_insert), batch_size)):
+    batch = data_to_insert[i : i + batch_size]
+    cursor.executemany(
+        """
+        INSERT INTO taxonomy (event_name, version_date, tax_id, parent_id, rank, name)
+        VALUES (:event_name, :version_date, :tax_id, :parent_id, :rank, :name)
+    """,
+        batch,
+    )
+
+# Commit the transaction after all batches are processed
+conn.commit()
+
+# Create the requested indices after data import
+cursor.execute("CREATE INDEX idx_tax_id ON taxonomy (tax_id);")
+cursor.execute("CREATE INDEX idx_tax_id_version_date ON taxonomy (tax_id, version_date);")
+
+# Restore the synchronous and journal mode settings to default
+cursor.execute("PRAGMA synchronous = FULL;")
+cursor.execute("PRAGMA journal_mode = DELETE;")
+
+conn.close()
