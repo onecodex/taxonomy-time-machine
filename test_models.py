@@ -1,12 +1,12 @@
 import pytest
 
-from app import Db
+from models import Taxonomy
 from datetime import datetime
 
 
 @pytest.fixture
 def db():
-    return Db()
+    return Taxonomy()
 
 
 def test_search_names(db):
