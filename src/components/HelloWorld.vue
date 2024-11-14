@@ -7,12 +7,14 @@ export default defineComponent({
     // Defining the reactive properties with appropriate types
 
     // queries
-    const taxId = ref<string>('498019');
+    const taxId = ref<string>('');
     const version = ref<string>('');
 
     // results
     const versions = ref<object[]>([]);
     const lineage = ref<object[]>([]);
+
+    const emoji = ref<string>('🌳');
 
     // a common place to store errors
     const error = ref<string | null>(null);
@@ -43,12 +45,28 @@ export default defineComponent({
 
       const data = await response.json()
       lineage.value = data || [];
+
+      if (lineage.value.some(item => item.name === "Fungi")) {
+          emoji.value = "🍄";
+      } else if (lineage.value.some(item => item.name === "Bacteria")) {
+          emoji.value = "🦠";
+      } else if (lineage.value.some(item => item.name === "Viruses")) {
+          emoji.value = "😷";
+      } else if (lineage.value.some(item => item.name === "Homo sapiens")) {
+          emoji.value = "🧑‍🔬";
+      } else if (lineage.value.some(item => item.name === "Canis lupus")) {
+          emoji.value = "🐕";
+      } else {
+          emoji.value = "🌳";
+      }
+
     };
 
     // Fetch function with types for API handling
     const fetchVersions = async () => {
       if (!taxId.value.toString().trim()) {
-        results.value = [];
+        lineage.value = [];
+        versions.value = [];
         return;
       }
 
@@ -77,6 +95,7 @@ export default defineComponent({
     });
 
     return {
+      emoji,
       taxId,
       lineage,
       versions,
@@ -92,7 +111,7 @@ export default defineComponent({
 <template>
   <div class="container">
 
-    <h1 class="title has-text-primary">Taxonomy</h1>
+    <h1 class="title has-text-primary">{{ emoji }} Taxonomy</h1>
 
 
     <div class="field">
@@ -102,7 +121,7 @@ export default defineComponent({
           class="input has-text-success"
           type="text" 
           v-model="taxId" 
-          placeholder="Type to search..." 
+          placeholder="Type to search... (example: 498019)" 
           @input="onInput"
         />
       </div>
