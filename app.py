@@ -9,6 +9,32 @@ app = Flask(__name__)
 # first and then filtering them ...
 
 
+@app.route("/search", methods=["GET"])
+def search():
+    """Return the most recent matching tax ID given a name"""
+    db = Taxonomy()
+
+    # these are just names
+    matches = db.search_names(query=request.args.get("query"))
+
+    if len(matches) == 0:
+        return jsonify(None)
+    else:
+        best_match = matches[0]["name"]
+
+        # find the most recent row
+        # this is when the name was *created*, not deprecated aka "valid
+        # until", which is a little confusing
+        rows = db.cursor.execute(
+            f"SELECT * from taxonomy where NAME = '{best_match}' order by version_date desc limit 1;"
+        ).fetchall()
+
+        if len(rows) == 0:
+            return jsonify(None)
+        else:
+            return jsonify(dict(rows[0]))
+
+
 @app.route("/events", methods=["GET"])
 def events():
     db = Taxonomy()
@@ -28,8 +54,6 @@ def children():
 
     children = list(db.get_children(tax_id=tax_id, as_of=version))
 
-    print(children)
-
     return jsonify(children)
 
 
@@ -48,8 +72,8 @@ def lineage():
 
 
 @app.route("/versions", methods=["GET"])
-def search():
-    db = Db()
+def versions():
+    db = Taxonomy()
     tax_id = request.args.get("tax_id")
     if tax_id:
         versions = [{"version_date": v.isoformat()} for v in db.get_versions(tax_id=tax_id)]

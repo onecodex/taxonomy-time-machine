@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import TaxonomyTimeMachine from './components/TaxonomyTimeMachine.vue'
 </script>
 
 <template>
-  <HelloWorld/>
+  <TaxonomyTimeMachine />
 </template>
 
 <style scoped>

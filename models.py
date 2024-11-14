@@ -45,9 +45,22 @@ class Taxonomy:
         self.conn.row_factory = sqlite3.Row  # return Row instead of tuple
         self.cursor = self.conn.cursor()
 
-    def search_names(self, query: str) -> list[dict]:
-        matches = self.cursor.execute(f"SELECT * FROM name_fts WHERE name MATCH '{query}';")
-        return [dict(r) for r in matches]
+    def search_names(self, query: str, limit: int = 10) -> list[dict]:
+        matches = []
+
+        # first look for exact mathes
+        matches.extend(
+            self.cursor.execute(f"SELECT * from taxonomy WHERE name = '{query}';").fetchall()
+        )
+
+        if len(matches) >= limit:
+            return [dict(r) for r in matches]
+
+        # fuzzy matches
+        matches.extend(
+            self.cursor.execute(f"SELECT * FROM name_fts WHERE name MATCH '{query}';").fetchall()
+        )
+        return [dict(r) for r in matches][:limit]
 
     def get_events(
         self,
@@ -95,6 +108,12 @@ class Taxonomy:
                 latest_row_by_tax_id[event["tax_id"]] = event
 
         rows = [r for r in latest_row_by_tax_id.values() if r["parent_id"] == tax_id]
+
+        # TODO: make this toggle-able
+        rows = [r for r in rows if "sp. " not in r["name"]]
+
+        # TODO: pagination
+        rows = rows[:20]
         return rows
 
     def get_all_events_recursive(self, tax_id: str) -> list[dict]:

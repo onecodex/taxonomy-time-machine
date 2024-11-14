@@ -4,13 +4,15 @@ import { defineComponent, ref, watch } from 'vue';
 export default defineComponent({
   name: 'SearchComponent',
   setup() {
-    // Defining the reactive properties with appropriate types
 
-    const query = ref<string>('');
+    // ~~~~~~~~~~~~~~~~~~~
+    // reactive properties
+    // ~~~~~~~~~~~~~~~~~~~
 
-    // queries
+    // query parameters
     const taxId = ref<string>('');
     const version = ref<string>('');
+    const query = ref<string>('');
 
     // results
     const versions = ref<object[]>([]);
@@ -30,10 +32,14 @@ export default defineComponent({
       error.value = null;
     });
 
-
     watch(taxId, () => {
-        console.log('UPDATE');
-        console.log(taxId);
+        fetchLineage();
+        fetchVersions();
+        fetchChildren();
+      }
+    );
+
+    watch(version, () => {
         fetchLineage();
         fetchVersions();
         fetchChildren();
@@ -50,24 +56,41 @@ export default defineComponent({
 
     // this sets taxId
     const setTaxId = async() => {
-      console.log(query.value);
       if (isNumeric(query.value)) {
-        console.log('taxId');
         taxId.value = query.value
       } else {
         findTaxId();
-        // TODO: text search here
-        console.log('text search');
-        taxId.value = '821';
+      }
+    };
+
+    const findTaxId = async() => {
+      if (query.value === null || !query.value.toString().trim()) {
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/search?query=${encodeURIComponent(query.value)}`);
+
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+
+      const data = await response.json()
+
+      if (data === null) {
+        taxId.value = null;
+        version.value = null;
+      } else {
+        taxId.value = data['tax_id'];
+        version.value = data["version_date"];
       }
     };
 
     const fetchChildren = async() => {
-      if (!taxId.value.toString().trim()) {
+      if (taxId.value === null || !taxId.value.toString().trim()) {
         children.value = [];
         return
       }
-      
+
       const response = await fetch(`http://localhost:5000/children?tax_id=${encodeURIComponent(taxId.value)}&version=${encodeURIComponent(version.value)}`);
 
       if (!response.ok) {
@@ -82,7 +105,7 @@ export default defineComponent({
     // this takes two parameters:
     // tax ID and version
     const fetchLineage = async() => {
-      if (!taxId.value.toString().trim()) {
+      if (taxId.value === null || !taxId.value.toString().trim()) {
         lineage.value = [];
         return
       }
@@ -94,7 +117,6 @@ export default defineComponent({
       }
 
       const data = await response.json()
-      lineage.value = data || [];
 
       if (lineage.value.some(item => item.name === "Fungi")) {
           emoji.value = "🍄";
@@ -110,11 +132,12 @@ export default defineComponent({
           emoji.value = "🌳";
       }
 
+      lineage.value = data || [];
     };
 
     // Fetch function with types for API handling
     const fetchVersions = async () => {
-      if (!taxId.value.toString().trim()) {
+      if (taxId.value === null || !taxId.value.toString().trim()) {
         lineage.value = [];
         versions.value = [];
         return;
@@ -131,17 +154,16 @@ export default defineComponent({
 
     const updateTaxId = (argTaxId: string) => {
       taxId.value = argTaxId;
-      onInput();
     };
 
     const updateVersion = (argVersion: string) => {
       version.value = argVersion;
-      onInput();
     };
 
     return {
       emoji,
       taxId,
+      version,
       lineage,
       children,
       versions,
@@ -157,21 +179,26 @@ export default defineComponent({
 </script>
 
 <template>
+  <section>
+    <h2>Debug</h2>
+    <code>taxId={{ taxId }}</code>
+    <code>version={{ version }}</code>
+  </section>
+
+
+
   <div class="container">
 
-    <h1 class="title has-text-primary">{{ emoji }} {{ query || 'Taxonomy Time Machine' }}</h1>
-
-    <code>taxId={{ taxId }}</code>
-
+    <h1 class="title has-text-primary">{{ emoji }} Taxonomy Time Machine</h1>
 
     <div class="field">
       <label class="label">Search for a name or tax ID</label>
       <div class="control">
-        <input 
+        <input
           class="input has-text-success is-primary is-large"
-          type="text" 
-          v-model="query" 
-          placeholder="Type to search... (example: 498019)" 
+          type="text"
+          v-model="query"
+          placeholder="Type to search... (example: 498019)"
           @input="onInput"
         />
       </div>
@@ -236,6 +263,11 @@ export default defineComponent({
     </div>
 
   </div>
+
+
+  <hr/>
+
+
 </template>
 
 <style scoped>
