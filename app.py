@@ -1,85 +1,143 @@
-from flask import Flask, request, jsonify
 from models import Taxonomy
 from datetime import datetime
 
+from flask import Flask
+from flask.views import MethodView
+import marshmallow as ma
+from flask_smorest import Api, Blueprint
 
 app = Flask(__name__)
+app.config["API_TITLE"] = "Taxonomy Time Machine"
+app.config["API_VERSION"] = "v1"
+app.config["OPENAPI_VERSION"] = "3.0.2"
+api = Api(app)
 
 # TODO: we can cut down on the number of DB queries by fetching the events
 # first and then filtering them ...
 
+blp = Blueprint("taxonomy", "taxonomy", url_prefix="/", description="Taxonomy Time Machine API")
 
-@app.route("/search", methods=["GET"])
-def search():
-    """Return the most recent matching tax ID given a name"""
-    db = Taxonomy()
 
-    # these are just names
-    matches = db.search_names(query=request.args.get("query"))
+class QueryArgsSchema(ma.Schema):
+    query = ma.fields.String()
 
-    if len(matches) == 0:
-        return jsonify(None)
-    else:
-        best_match = matches[0]["name"]
 
-        # find the most recent row
-        # this is when the name was *created*, not deprecated aka "valid
-        # until", which is a little confusing
-        rows = db.cursor.execute(
-            f"SELECT * from taxonomy where NAME = '{best_match}' order by version_date desc limit 1;"
-        ).fetchall()
+class TaxIdQuerySchema(ma.Schema):
+    tax_id = ma.fields.Integer()
 
-        if len(rows) == 0:
-            return jsonify(None)
+
+class ChildrenQuerySchema(ma.Schema):
+    tax_id = ma.fields.Integer()
+    version_date = ma.fields.NaiveDateTime(required=False, allow_none=True)
+
+    @ma.pre_load
+    def coerce_empty_to_none(self, data, **kwargs):
+        data = data.copy()
+        for key, value in data.items():
+            if value == "":
+                data[key] = None
+        return data
+
+
+class TaxonSchema(ma.Schema):
+    event_name = ma.fields.String()
+    name = ma.fields.String()
+    tax_id = ma.fields.Integer()
+    parent_id = ma.fields.Integer(allow_none=True)
+    version_date = ma.fields.NaiveDateTime()
+
+
+class VersionSchema(ma.Schema):
+    version_date = ma.fields.NaiveDateTime()
+
+
+def _coerce_row(row):
+    row = dict(row)
+    if "version_date" in row:
+        # TODO: handle this in the schema?
+        row["version_date"] = datetime.fromisoformat(row["version_date"])
+    return row
+
+
+@blp.route("/search")
+class Search(MethodView):
+    @blp.arguments(QueryArgsSchema, location="query")
+    @blp.response(200, TaxonSchema(many=True))
+    def get(self, args):
+        """Return the most recent matching tax ID given a name"""
+        db = Taxonomy()
+
+        # these are just names
+        matches = db.search_names(query=args["query"])
+
+        if len(matches) == 0:
+            return []
         else:
-            return jsonify(dict(rows[0]))
+            best_match = matches[0]["name"]
+
+            # find the most recent row
+            # this is when the name was *created*, not deprecated aka "valid
+            # until", which is a little confusing
+            rows = db.cursor.execute(
+                f"SELECT * from taxonomy where NAME = '{best_match}' order by version_date desc limit 1;"
+            ).fetchall()
+
+            if len(rows) == 0:
+                return []
+            else:
+                return [_coerce_row(r) for r in rows]
 
 
-@app.route("/events", methods=["GET"])
-def events():
-    db = Taxonomy()
-    tax_id = request.args.get("tax_id")
-    events = list(db.get_events(tax_id=tax_id))
-    return jsonify(events)
+@blp.route("/events")
+class Events(MethodView):
+    @blp.arguments(TaxIdQuerySchema, location="query")
+    @blp.response(200, TaxonSchema(many=True))
+    def get(self, args):
+        db = Taxonomy()
+        tax_id = args["tax_id"]
+        return db.get_events(tax_id=tax_id)
 
 
-@app.route("/children", methods=["GET"])
-def children():
-    db = Taxonomy()
-    version = request.args.get("version")
-    tax_id = int(request.args.get("tax_id"))
+@blp.route("/children")
+class Children(MethodView):
+    @blp.arguments(ChildrenQuerySchema, location="query")
+    @blp.response(200, TaxonSchema(many=True))
+    def get(self, args):
+        db = Taxonomy()
+        version = args.get("version_date")
+        tax_id = args["tax_id"]
 
-    if version:
-        version = datetime.fromisoformat(version)
-
-    children = list(db.get_children(tax_id=tax_id, as_of=version))
-
-    return jsonify(children)
+        return db.get_children(tax_id=tax_id, as_of=version)
 
 
-@app.route("/lineage", methods=["GET"])
-def lineage():
-    db = Taxonomy()
-    version = request.args.get("version")
-    tax_id = int(request.args.get("tax_id"))
+@blp.route("/lineage")
+class Lineage(MethodView):
+    # TODO: more generic name for schema
+    @blp.arguments(ChildrenQuerySchema, location="query")
+    @blp.response(200, TaxonSchema(many=True))
+    def get(self, args):
+        db = Taxonomy()
+        print(args)
+        tax_id = args["tax_id"]
+        version = args.get("version_date")
 
-    if version:
-        version = datetime.fromisoformat(version)
-
-    lineage = list(db.get_lineage(tax_id=tax_id, as_of=version))
-
-    return jsonify(lineage)
+        return db.get_lineage(tax_id=tax_id, as_of=version)
 
 
-@app.route("/versions", methods=["GET"])
-def versions():
-    db = Taxonomy()
-    tax_id = request.args.get("tax_id")
-    if tax_id:
-        versions = [{"version_date": v.isoformat()} for v in db.get_versions(tax_id=tax_id)]
-        return jsonify(versions)
-    else:
-        return jsonify([])
+@blp.route("/versions")
+class Versions(MethodView):
+    @blp.arguments(ChildrenQuerySchema, location="query")
+    @blp.response(200, VersionSchema(many=True))
+    def get(self, args):
+        db = Taxonomy()
+        tax_id = args.get("tax_id")
+        if tax_id:
+            return [{"version_date": v} for v in db.get_versions(tax_id=tax_id)]
+        else:
+            return []
+
+
+api.register_blueprint(blp)
 
 
 def main():

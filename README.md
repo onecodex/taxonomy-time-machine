@@ -8,6 +8,7 @@
    two events cancel each other out
    - easy fix: just deduplicate the history table
 4. [ ] API (maybe just use flask-smorest)
+5. [ ] Deploy!
 
 ## Setup
 

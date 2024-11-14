@@ -64,7 +64,7 @@ export default defineComponent({
     };
 
     const findTaxId = async() => {
-      if (query.value === null || !query.value.toString().trim()) {
+      if (query.value == null || !query.value.toString().trim()) {
         return;
       }
 
@@ -74,19 +74,19 @@ export default defineComponent({
         throw new Error('API request failed');
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
-      if (data === null) {
+      if (data.length == 0) {
         taxId.value = null;
         version.value = null;
       } else {
-        taxId.value = data['tax_id'];
-        version.value = data["version_date"];
+        taxId.value = data[0]['tax_id'];
+        version.value = data[0]["version_date"];
       }
     };
 
     const fetchChildren = async() => {
-      if (taxId.value === null || !taxId.value.toString().trim()) {
+      if (taxId.value == null || !taxId.value.toString().trim()) {
         children.value = [];
         return
       }
@@ -105,18 +105,18 @@ export default defineComponent({
     // this takes two parameters:
     // tax ID and version
     const fetchLineage = async() => {
-      if (taxId.value === null || !taxId.value.toString().trim()) {
+      if (taxId.value == null || !taxId.value.toString().trim()) {
         lineage.value = [];
         return
       }
 
-      const response = await fetch(`http://localhost:5000/lineage?tax_id=${encodeURIComponent(taxId.value)}&version=${encodeURIComponent(version.value)}`);
+      const response = await fetch(`http://localhost:5000/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value)}`);
 
       if (!response.ok) {
         throw new Error('API request failed');
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (lineage.value.some(item => item.name === "Fungi")) {
           emoji.value = "🍄";
@@ -137,7 +137,7 @@ export default defineComponent({
 
     // Fetch function with types for API handling
     const fetchVersions = async () => {
-      if (taxId.value === null || !taxId.value.toString().trim()) {
+      if (taxId.value == null || !taxId.value.toString().trim()) {
         lineage.value = [];
         versions.value = [];
         return;
@@ -148,7 +148,7 @@ export default defineComponent({
         throw new Error('API request failed');
       }
 
-      const data = await response.json()
+      const data = await response.json();
       versions.value = data || [];
     };
 
@@ -216,7 +216,6 @@ export default defineComponent({
           </li>
         </ol>
       </div>
-
 
       <!-- lineage table -->
       <div class="column auto">
