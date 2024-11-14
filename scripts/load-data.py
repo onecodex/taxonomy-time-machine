@@ -145,10 +145,10 @@ CREATE TABLE IF NOT EXISTS taxonomy (
 )
 """)
 
-# Batch insert using transactions and executemany
-batch_size = 10_000  # Insert 10,000 rows at a time
+batch_size = 10_000
 
 # Loop through data in batches to avoid memory overload
+# Batch insert using transactions and executemany
 for i in tqdm(range(0, len(data_to_insert), batch_size)):
     batch = data_to_insert[i : i + batch_size]
     cursor.executemany(
@@ -159,14 +159,14 @@ for i in tqdm(range(0, len(data_to_insert), batch_size)):
         batch,
     )
 
-# Commit the transaction after all batches are processed
 conn.commit()
 
-# Create the requested indices after data import
 cursor.execute("CREATE INDEX idx_tax_id ON taxonomy (tax_id);")
+cursor.execute("CREATE INDEX idx_parent_id ON taxonomy (parent_id);")
+cursor.execute("CREATE INDEX idx_name ON taxonomy (name);")
 cursor.execute("CREATE INDEX idx_tax_id_version_date ON taxonomy (tax_id, version_date);")
+cursor.execute("CREATE INDEX idx_name_version_date ON taxonomy (name, version_date);")
 
-# Restore the synchronous and journal mode settings to default
 cursor.execute("PRAGMA synchronous = FULL;")
 cursor.execute("PRAGMA journal_mode = DELETE;")
 
