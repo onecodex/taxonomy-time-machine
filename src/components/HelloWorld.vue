@@ -6,6 +6,8 @@ export default defineComponent({
   setup() {
     // Defining the reactive properties with appropriate types
 
+    const query = ref<string>('');
+
     // queries
     const taxId = ref<string>('');
     const version = ref<string>('');
@@ -13,6 +15,7 @@ export default defineComponent({
     // results
     const versions = ref<object[]>([]);
     const lineage = ref<object[]>([]);
+    const children = ref<object[]>([]);
 
     const emoji = ref<string>('🌳');
 
@@ -20,14 +23,61 @@ export default defineComponent({
     const error = ref<string | null>(null);
     let timeout: ReturnType<typeof setTimeout> | null = null;
 
+    const isNumeric = (value) => !isNaN(value) && value !== null && value !== '' && !isNaN(parseFloat(value));
+
+    // Watcher to reset error state on query change
+    watch(query, () => {
+      error.value = null;
+    });
+
+
+    watch(taxId, () => {
+        console.log('UPDATE');
+        console.log(taxId);
+        fetchLineage();
+        fetchVersions();
+        fetchChildren();
+      }
+    );
+
     // Debounced input handler
     const onInput = () => {
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(() => {
-        fetchLineage();
-        fetchVersions();
+        setTaxId();
       }, 300);
     };
+
+    // this sets taxId
+    const setTaxId = async() => {
+      console.log(query.value);
+      if (isNumeric(query.value)) {
+        console.log('taxId');
+        taxId.value = query.value
+      } else {
+        findTaxId();
+        // TODO: text search here
+        console.log('text search');
+        taxId.value = '821';
+      }
+    };
+
+    const fetchChildren = async() => {
+      if (!taxId.value.toString().trim()) {
+        children.value = [];
+        return
+      }
+      
+      const response = await fetch(`http://localhost:5000/children?tax_id=${encodeURIComponent(taxId.value)}&version=${encodeURIComponent(version.value)}`);
+
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+
+      const data = await response.json()
+      children.value = data || [];
+    };
+
 
     // this takes two parameters:
     // tax ID and version
@@ -89,20 +139,18 @@ export default defineComponent({
       onInput();
     };
 
-    // Watcher to reset error state on taxId change
-    watch(taxId, () => {
-      error.value = null;
-    });
-
     return {
       emoji,
       taxId,
       lineage,
+      children,
       versions,
+      query,
       error,
       onInput,
       updateTaxId,
       updateVersion,
+      setTaxId,
     };
   },
 });
@@ -111,16 +159,18 @@ export default defineComponent({
 <template>
   <div class="container">
 
-    <h1 class="title has-text-primary">{{ emoji }} Taxonomy</h1>
+    <h1 class="title has-text-primary">{{ emoji }} {{ query || 'Taxonomy Time Machine' }}</h1>
+
+    <code>taxId={{ taxId }}</code>
 
 
     <div class="field">
       <label class="label">Search for a name or tax ID</label>
       <div class="control">
         <input 
-          class="input has-text-success"
+          class="input has-text-success is-primary is-large"
           type="text" 
-          v-model="taxId" 
+          v-model="query" 
           placeholder="Type to search... (example: 498019)" 
           @input="onInput"
         />
@@ -154,6 +204,27 @@ export default defineComponent({
               </tr>
             </thead>
             <tr v-for="node in lineage">
+              <td>{{ node.tax_id }}</td>
+              <td>{{ node.name }}</td>
+              <td>{{ node.rank }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- children table -->
+      <div class="column auto">
+        <div v-if="children">
+          <h2>Children</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>tax_id</th>
+                <th>name</th>
+                <th>rank</th>
+              </tr>
+            </thead>
+            <tr v-for="node in children">
               <td>{{ node.tax_id }}</td>
               <td>{{ node.name }}</td>
               <td>{{ node.rank }}</td>

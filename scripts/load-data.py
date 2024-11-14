@@ -51,6 +51,7 @@ last_tax_ids: None | set[str] = None
 for n, taxdump in enumerate(taxdumps):
     taxdump_date = dump_path_to_datetime(taxdump)
     tax = taxonomy.Taxonomy.from_ncbi(str(taxdump))
+    print(f"--- loaded {taxdump}: {tax}")
 
     # we infer deleted nodes by comparing the tax IDs in the current dump to those
     # found in the previous dump
@@ -118,7 +119,7 @@ for n, taxdump in enumerate(taxdumps):
     print(f"{n}/{len(taxdumps)} total_events={n_events:,} n_new_events={n_new_events:,}")
 
     for event_name, count in event_counts.items():
-        print(f"    {event_name.value:>20} -> {count:,}")
+        print(f"    {event_name.value:>10} -> {count:,}")
 
     print()
 
@@ -161,13 +162,22 @@ for i in tqdm(range(0, len(data_to_insert), batch_size)):
 
 conn.commit()
 
+print("--- creating b-tree indexes")
 cursor.execute("CREATE INDEX idx_tax_id ON taxonomy (tax_id);")
 cursor.execute("CREATE INDEX idx_parent_id ON taxonomy (parent_id);")
 cursor.execute("CREATE INDEX idx_name ON taxonomy (name);")
 cursor.execute("CREATE INDEX idx_tax_id_version_date ON taxonomy (tax_id, version_date);")
 cursor.execute("CREATE INDEX idx_name_version_date ON taxonomy (name, version_date);")
 
-cursor.execute("PRAGMA synchronous = FULL;")
-cursor.execute("PRAGMA journal_mode = DELETE;")
+# Full Text Search (FTS) index
+print("--- creating full text index")
+cursor.execute("CREATE VIRTUAL TABLE name_fts USING fts5(name);")
+cursor.execute("INSERT INTO name_fts (name) SELECT name FROM taxonomy;")
+
+conn.commit()
+
+print("--- wrapping up")
+# cursor.execute("PRAGMA synchronous = FULL;")
+# cursor.execute("PRAGMA journal_mode = DELETE;")
 
 conn.close()

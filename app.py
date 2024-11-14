@@ -47,6 +47,10 @@ class Db:
         self.conn.row_factory = sqlite3.Row  # return Row instead of tuple
         self.cursor = self.conn.cursor()
 
+    def search_names(self, query: str) -> list[dict]:
+        matches = self.cursor.execute(f"SELECT * FROM name_fts WHERE name MATCH '{query}';")
+        return [dict(r) for r in matches]
+
     def get_events(
         self,
         tax_id: str,
@@ -91,7 +95,12 @@ class Db:
                 event["version_date"] >= latest_row_by_tax_id[event["tax_id"]]["version_date"]
             ):
                 latest_row_by_tax_id[event["tax_id"]] = event
-        return [r for r in latest_row_by_tax_id.values() if r["parent_id"] == tax_id]
+
+        print(latest_row_by_tax_id)
+        print(f"{tax_id=}")
+        rows = [r for r in latest_row_by_tax_id.values() if r["parent_id"] == tax_id]
+        print(rows)
+        return rows
 
     def get_all_events_recursive(self, tax_id: str) -> list[dict]:
         return get_all_events_recursive(db=self, tax_id=tax_id)
@@ -132,12 +141,39 @@ class Db:
 
 app = Flask(__name__)
 
+# TODO: we can cut down on the number of DB queries by fetching the events
+# first and then filtering them ...
+
+
+@app.route("/events", methods=["GET"])
+def events():
+    db = Db()
+    tax_id = request.args.get("tax_id")
+    events = list(db.get_events(tax_id=tax_id))
+    return jsonify(events)
+
+
+@app.route("/children", methods=["GET"])
+def children():
+    db = Db()
+    version = request.args.get("version")
+    tax_id = int(request.args.get("tax_id"))
+
+    if version:
+        version = datetime.fromisoformat(version)
+
+    children = list(db.get_children(tax_id=tax_id, as_of=version))
+
+    print(children)
+
+    return jsonify(children)
+
 
 @app.route("/lineage", methods=["GET"])
 def lineage():
     db = Db()
     version = request.args.get("version")
-    tax_id = request.args.get("tax_id")
+    tax_id = int(request.args.get("tax_id"))
 
     if version:
         version = datetime.fromisoformat(version)
