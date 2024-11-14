@@ -25,11 +25,6 @@ def get_all_events_recursive(db: "Db", tax_id: str, seen_tax_ids: set | None = N
     for event in db.get_events(tax_id):
         events.append(event)
 
-        if event["tax_id"] not in seen_tax_ids:
-            events.extend(
-                get_all_events_recursive(db, tax_id=event["tax_id"], seen_tax_ids=seen_tax_ids)
-            )
-
         seen_tax_ids.add(event["tax_id"])
 
         if event["parent_id"] and event["parent_id"] not in seen_tax_ids:
