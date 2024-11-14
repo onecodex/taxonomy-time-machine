@@ -5,11 +5,16 @@ export default defineComponent({
   name: 'SearchComponent',
   setup() {
     // Defining the reactive properties with appropriate types
+
+    // queries
     const taxId = ref<string>('498019');
-    const results = ref<object[]>([]);
-    const lineage = ref<object[]>([]);
     const version = ref<string>('');
 
+    // results
+    const versions = ref<object[]>([]);
+    const lineage = ref<object[]>([]);
+
+    // a common place to store errors
     const error = ref<string | null>(null);
     let timeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -18,7 +23,7 @@ export default defineComponent({
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(() => {
         fetchLineage();
-        fetchHistory();
+        fetchVersions();
       }, 300);
     };
 
@@ -41,19 +46,19 @@ export default defineComponent({
     };
 
     // Fetch function with types for API handling
-    const fetchHistory = async () => {
+    const fetchVersions = async () => {
       if (!taxId.value.toString().trim()) {
         results.value = [];
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/search?tax_id=${encodeURIComponent(taxId.value)}`);
+      const response = await fetch(`http://localhost:5000/versions?tax_id=${encodeURIComponent(taxId.value)}`);
       if (!response.ok) {
         throw new Error('API request failed');
       }
 
       const data = await response.json()
-      results.value = data || [];
+      versions.value = data || [];
     };
 
     const updateTaxId = (argTaxId: string) => {
@@ -74,7 +79,7 @@ export default defineComponent({
     return {
       taxId,
       lineage,
-      results,
+      versions,
       error,
       onInput,
       updateTaxId,
@@ -85,59 +90,60 @@ export default defineComponent({
 </script>
 
 <template>
-  <h1>Taxonomy</h1>
-  <div class="card">
-    <input 
-      type="text" 
-      v-model="taxId" 
-      placeholder="Type to search..." 
-      @input="onInput" />
+  <div class="container">
+
+    <h1 class="title has-text-primary">Taxonomy</h1>
+
+
+    <div class="field">
+      <label class="label">Search for a name or tax ID</label>
+      <div class="control">
+        <input 
+          class="input has-text-success"
+          type="text" 
+          v-model="taxId" 
+          placeholder="Type to search..." 
+          @input="onInput"
+        />
+      </div>
+    </div>
 
     <div v-if="error" class="error">{{ error }}</div>
 
-    <!-- lineage table -->
+    <div class="columns">
 
-    <div v-if="lineage">
-      <h2>Lineage</h2>
+      <div class="column is-one-fifth">
+        <h2>Versions</h2>
+        <ol class="ul">
+          <li v-for="version in versions">
+            <a href="#" @click.prevent="updateVersion(version.version_date)">{{ version.version_date }}</a>
+          </li>
+        </ol>
+      </div>
 
-      <table>
-        <tr>
-          <th>tax_id</th>
-          <th>name</th>
-          <th>rank</th>
-        </tr>
-        <tr v-for="node in lineage">
-          <td>{{ node.tax_id }}</td>
-          <td>{{ node.name }}</td>
-          <td>{{ node.rank }}</td>
-        </tr>
-      </table>
+
+      <!-- lineage table -->
+      <div class="column auto">
+        <div v-if="lineage">
+          <h2>Lineage</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>tax_id</th>
+                <th>name</th>
+                <th>rank</th>
+              </tr>
+            </thead>
+            <tr v-for="node in lineage">
+              <td>{{ node.tax_id }}</td>
+              <td>{{ node.name }}</td>
+              <td>{{ node.rank }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
     </div>
-
-    <!-- version table -->
-    <h2>History</h2>
-    <table>
-      <tr>
-        <th>event</th>
-        <th>date</th>
-        <th>tax_id</th>
-        <th>parent_id</th>
-        <th>name</th>
-        <th>rank</th>
-      </tr>
-      <tr v-if="results" v-for="event in results">
-        <td>{{ event.event_name }}</td>
-        <td>
-          <a href="#" @click.prevent="updateVersion(event.version_date)">{{ event.version_date }}</a>
-        </td>
-        <td>
-          <a href="#" @click.prevent="updateTaxId(event.tax_id)">{{ event.tax_id }}</a>
-        </td>
-        <td>{{ event.parent_id }}</td>
-        <td>{{ event.name }}</td>
-        <td>{{ event.rank }}</td>
-      </tr>
-    </table>
 
   </div>
 </template>

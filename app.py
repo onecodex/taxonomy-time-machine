@@ -11,6 +11,10 @@ def get_all_events_recursive(db: "Db", tax_id: str, seen_tax_ids: set | None = N
     their parents, etc...
 
     TODO: also find all events for the children of a tax ID
+
+    TODO: this sometimes finds irrelevant events like a new node is created
+    under a node in the lineage but isn't directly part of the current taxon's
+    lineage
     """
     events: list[dict] = []
 
@@ -65,8 +69,22 @@ class Db:
 
         return rows
 
+    # TODO
+    def get_children(self, tax_id: str, as_of=None):
+        """Get all children of a node at a given version"""
+
+        # find all create/alter events where parent_id = tax_id and
+        # version_date <= as_of
+        pass
+
     def get_all_events_recursive(self, tax_id: str) -> list[dict]:
         return get_all_events_recursive(db=self, tax_id=tax_id)
+
+    def get_versions(self, tax_id: str) -> list[datetime]:
+        """Get the collapsed list of dates at which a taxon's lineage
+        changed"""
+        events = get_all_events_recursive(db=self, tax_id=tax_id)
+        return sorted({e["version_date"] for e in events})
 
     def get_lineage(self, tax_id: str, as_of: datetime | None = None):
         """
@@ -108,19 +126,15 @@ def lineage():
     return jsonify(lineage)
 
 
-@app.route("/search", methods=["GET"])
+@app.route("/versions", methods=["GET"])
 def search():
     db = Db()
     tax_id = request.args.get("tax_id")
     if tax_id:
-        rows = db.get_all_events_recursive(tax_id=tax_id)
-
-        # make this a string again...
-        for row in rows:
-            row["version_date"] = row["version_date"].isoformat()
-        return jsonify(rows)
+        versions = [{"version_date": v.isoformat()} for v in db.get_versions(tax_id=tax_id)]
+        return jsonify(versions)
     else:
-        return jsonify({"ok": True})
+        return jsonify([])
 
 
 def main():
@@ -130,10 +144,10 @@ def main():
 
     events = db.get_events("498019")
 
-    print(pl.DataFrame(events))
+    pl.DataFrame(events)
 
     as_of_date = datetime.strptime("2020-01-01", "%Y-%m-%d")
-    print(pl.DataFrame(db.get_lineage("498019", as_of=as_of_date)))
+    pl.DataFrame(db.get_lineage("498019", as_of=as_of_date))
 
     print(pl.DataFrame(db.get_all_events_recursive("498019")))
 
