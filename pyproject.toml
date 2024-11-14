@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "flask>=3.1.0",
     "polars>=1.13.1",
+    "pytest>=8.3.3",
     "taxonomy>=0.10.0",
     "tqdm>=4.67.0",
 ]
