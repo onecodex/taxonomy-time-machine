@@ -55,6 +55,7 @@ class Db:
     ) -> list:
         """Get all events for a given tax_id or parent_id depending on
         query_key (default='tax_id')"""
+
         self.cursor.execute(f"SELECT * FROM taxonomy WHERE {query_key} = {tax_id};")
 
         rows = [dict(r) for r in self.cursor.fetchall()]
@@ -67,15 +68,30 @@ class Db:
         if as_of:
             rows = [r for r in rows if r["version_date"] <= as_of]
 
+        rows = sorted(rows, key=lambda r: r["version_date"])
+
         return rows
 
-    # TODO
     def get_children(self, tax_id: str, as_of=None):
         """Get all children of a node at a given version"""
 
         # find all create/alter events where parent_id = tax_id and
         # version_date <= as_of
-        pass
+        events = self.get_events(tax_id=tax_id, as_of=as_of, query_key="parent_id")
+
+        # for each tax ID, get the *latest* parent_id
+        # if that parent_id == tax_id then keep it
+
+        # NOTE: it's faster to do this in Python than in SQL at least with the
+        # queries I tried.
+
+        latest_row_by_tax_id: dict[str, dict] = {}
+        for event in events:
+            if event["tax_id"] not in latest_row_by_tax_id or (
+                event["version_date"] >= latest_row_by_tax_id[event["tax_id"]]["version_date"]
+            ):
+                latest_row_by_tax_id[event["tax_id"]] = event
+        return [r for r in latest_row_by_tax_id.values() if r["parent_id"] == tax_id]
 
     def get_all_events_recursive(self, tax_id: str) -> list[dict]:
         return get_all_events_recursive(db=self, tax_id=tax_id)
@@ -91,6 +107,9 @@ class Db:
         Given a tax_id: return the taxonomy lineage. If `as_of` is specified,
         return the taxonomy lineage as of that date.
         """
+
+        lineage = []
+
         while True:
             events = self.get_events(tax_id=tax_id, as_of=as_of)
 
@@ -102,11 +121,13 @@ class Db:
                     break
 
             if parent is not None:
-                yield parent
+                lineage.append(parent)
             else:
                 break
 
             tax_id = parent["parent_id"]
+
+        return lineage
 
 
 app = Flask(__name__)
