@@ -44,25 +44,19 @@ class Event:
 
 
 n_events = 0
-
 tax_id_to_node: dict = {}
-
 data_to_insert = []
+last_tax_ids: None | set[str] = None
 
-for n, taxdump in enumerate(taxdumps[::20]):
+for n, taxdump in enumerate(taxdumps):
     taxdump_date = dump_path_to_datetime(taxdump)
     tax = taxonomy.Taxonomy.from_ncbi(str(taxdump))
 
-    # TODO: also load merged.dmp and delnodes.dmp
-    # can we infer deleted and merged from just names and nodes?
-
-    n_new_events = 0
-
-    starting_tax_ids: set[str] = set(tax_id_to_node.keys())
+    # we infer deleted nodes by comparing the tax IDs in the current dump to those
+    # found in the previous dump
     seen_tax_ids: set[str] = set()
-
     event_counts: Counter[EventName] = Counter()
-
+    n_new_events = 0
     events: list[Event] = []
 
     for tax_id in tax:
@@ -102,8 +96,10 @@ for n, taxdump in enumerate(taxdumps[::20]):
     # find all the deleted nodes
 
     # append deletions
-    for tax_id in starting_tax_ids - seen_tax_ids:
-        events.append(Event(event_name=EventName.Delete, id=tax_id))
+    if last_tax_ids is not None:
+        for tax_id in last_tax_ids - seen_tax_ids:
+            events.append(Event(event_name=EventName.Delete, id=tax_id))
+    last_tax_ids = seen_tax_ids
 
     for event in events:
         event_counts[event.event_name] += 1
