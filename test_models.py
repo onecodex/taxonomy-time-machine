@@ -22,7 +22,25 @@ def test_get_events(db):
 # TODO: there is a bug where we sometimes fetch irrelevant events
 def test_get_all_events_recursive(db):
     events = db.get_all_events_recursive("498019")
+
     assert events
+
+
+def test_get_versions(db):
+    versions = db.get_versions("498019")
+    assert versions
+
+    lineages = []
+
+    for version in versions:
+        events = db.get_lineage(tax_id="498019", as_of=version)
+
+        lineage_data = tuple([(e["rank"], e["tax_id"], e["parent_id"], e["name"]) for e in events])
+
+        lineages.append(lineage_data)
+
+    # no lineages should be repeated
+    assert len(lineages) == len(set(lineages))
 
 
 def test_get_children(db):

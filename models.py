@@ -14,6 +14,9 @@ def _get_all_events_recursive(db: "Taxonomy", tax_id: str, seen_tax_ids: set | N
     under a node in the lineage but isn't directly part of the current taxon's
     lineage
     """
+
+    events = db.get_events(tax_id=tax_id)
+
     events: list[dict] = []
 
     if seen_tax_ids is None:
@@ -127,9 +130,24 @@ class Taxonomy:
     def get_versions(self, tax_id: str) -> list[datetime]:
         """Get the collapsed list of dates at which a taxon's lineage
         changed"""
-        events = _get_all_events_recursive(db=self, tax_id=tax_id)
 
-        return sorted({e["version_date"] for e in events})
+        events = _get_all_events_recursive(db=self, tax_id=tax_id)
+        version_dates = sorted({e["version_date"] for e in events})
+
+        seen_lineages = set()
+        versions_with_changes = []
+
+        for version_date in version_dates:
+            events = self.get_lineage(tax_id=tax_id, as_of=version_date)
+
+            key = tuple([(e["rank"], e["tax_id"], e["parent_id"], e["name"]) for e in events])
+
+            if key not in seen_lineages:
+                versions_with_changes.append(version_date)
+
+            seen_lineages.add(key)
+
+        return versions_with_changes
 
     def get_lineage(self, tax_id: str, as_of: datetime | None = None):
         """
