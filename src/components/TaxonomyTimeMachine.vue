@@ -122,12 +122,22 @@ export default defineComponent({
           emoji.value = "🍄";
       } else if (lineage.value.some(item => item.name === "Bacteria")) {
           emoji.value = "🦠";
+      } else if (lineage.value.some(item => item.name === "Archaea")) {
+          emoji.value = "🦠";
       } else if (lineage.value.some(item => item.name === "Viruses")) {
           emoji.value = "😷";
       } else if (lineage.value.some(item => item.name === "Homo sapiens")) {
           emoji.value = "🧑‍🔬";
       } else if (lineage.value.some(item => item.name === "Canis lupus")) {
           emoji.value = "🐕";
+      } else if (lineage.value.some(item => item.name === "Felis catus")) {
+          emoji.value = "🐈";
+      } else if (lineage.value.some(item => item.name === "Gallus gallus")) {
+          emoji.value = "🐔";
+      } else if (lineage.value.some(item => item.name === "Bos taurus")) {
+          emoji.value = "🐄";
+      } else if (lineage.value.some(item => item.name === "Serpentes")) {
+          emoji.value = "🐍";
       } else {
           emoji.value = "🌳";
       }

@@ -67,8 +67,8 @@ class Search(MethodView):
         """Return the most recent matching tax ID given a name"""
         db = Taxonomy()
 
-        # these are just names
-        matches = db.search_names(query=args["query"])
+        # fetch a list of matching names
+        matches = db.search_names(query=args["query"], limit=1)
 
         if len(matches) == 0:
             return []

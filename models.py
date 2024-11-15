@@ -48,17 +48,24 @@ class Taxonomy:
     def search_names(self, query: str, limit: int = 10) -> list[dict]:
         matches = []
 
-        # first look for exact mathes
+        # first look for exact mathes (case insensitive)
+        # LIKE is too slow...
         matches.extend(
-            self.cursor.execute(f"SELECT * from taxonomy WHERE name = '{query}';").fetchall()
+            self.cursor.execute(
+                f"SELECT * from taxonomy WHERE lower(name) = lower('{query}');"
+            ).fetchall()
         )
+
+        print(matches)
 
         if len(matches) >= limit:
             return [dict(r) for r in matches]
 
         # fuzzy matches
         matches.extend(
-            self.cursor.execute(f"SELECT * FROM name_fts WHERE name MATCH '{query}';").fetchall()
+            self.cursor.execute(
+                f"SELECT * FROM name_fts WHERE name MATCH '{query}' order by rank;"
+            ).fetchall()
         )
         return [dict(r) for r in matches][:limit]
 

@@ -165,7 +165,10 @@ conn.commit()
 print("--- creating b-tree indexes")
 cursor.execute("CREATE INDEX idx_tax_id ON taxonomy (tax_id);")
 cursor.execute("CREATE INDEX idx_parent_id ON taxonomy (parent_id);")
-cursor.execute("CREATE INDEX idx_name ON taxonomy (name);")
+
+# index the lowercase of `name` to speed up case-insensitive searches
+# like lower(name) = lower('query');
+cursor.execute("CREATE INDEX idx_name ON taxonomy (lower(name));")
 cursor.execute("CREATE INDEX idx_tax_id_version_date ON taxonomy (tax_id, version_date);")
 cursor.execute("CREATE INDEX idx_name_version_date ON taxonomy (name, version_date);")
 
