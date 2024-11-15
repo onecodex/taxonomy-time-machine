@@ -189,9 +189,13 @@ class Taxonomy:
 
             key = tuple([(e["rank"], e["tax_id"], e["parent_id"], e["name"]) for e in events])
 
+            # prevents versions where the tax ID didn't exist yet from showing
+            # up for some reason
+            if len(key) == 0:
+                continue
+
             if key not in seen_lineages:
                 versions_with_changes.append(version_date)
-
             seen_lineages.add(key)
 
         return versions_with_changes
