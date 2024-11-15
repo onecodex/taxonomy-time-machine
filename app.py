@@ -1,4 +1,4 @@
-from models import Taxonomy
+from models import Taxonomy, coerce_row
 from datetime import datetime
 
 from flask import Flask
@@ -53,14 +53,6 @@ class VersionSchema(ma.Schema):
     version_date = ma.fields.NaiveDateTime()
 
 
-def _coerce_row(row):
-    row = dict(row)
-    if "version_date" in row:
-        # TODO: handle this in the scopenapi/hema?
-        row["version_date"] = datetime.fromisoformat(row["version_date"])
-    return row
-
-
 @blp.route("/search")
 class Search(MethodView):
     @blp.arguments(QueryArgsSchema, location="query")
@@ -70,24 +62,9 @@ class Search(MethodView):
         db = Taxonomy()
 
         # fetch a list of matching names
-        matches = db.search_names(query=args["query"], limit=1)
+        matches = db.search_names(query=args["query"], limit=10)
 
-        if len(matches) == 0:
-            return []
-        else:
-            best_match = matches[0]["name"]
-
-            # find the most recent row
-            # this is when the name was *created*, not deprecated aka "valid
-            # until", which is a little confusing
-            rows = db.cursor.execute(
-                f"SELECT * from taxonomy where NAME = '{best_match}' order by version_date desc limit 1;"
-            ).fetchall()
-
-            if len(rows) == 0:
-                return []
-            else:
-                return [_coerce_row(r) for r in rows]
+        return matches
 
 
 @blp.route("/events")

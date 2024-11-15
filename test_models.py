@@ -10,7 +10,20 @@ def db():
 
 
 def test_search_names(db):
-    matches = db.search_names("Bacteroides")
+    matches = db.search_names("Drosophila", limit=None)
+
+    # matches should all have full taxonomic data
+    for match in matches:
+        assert "tax_id" in match
+        assert "rank" in match
+        assert "name" in match
+        assert "event_name" in match
+        assert "version_date" in match
+        assert type(match["version_date"]) is datetime
+
+    # data should be uniquified
+    assert len({m["tax_id"] for m in matches}) == len(matches)
+
     assert matches
 
 

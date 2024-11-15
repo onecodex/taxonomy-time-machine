@@ -3,6 +3,14 @@ from datetime import datetime
 from typing import Literal
 
 
+def coerce_row(row):
+    row = dict(row)
+    if "version_date" in row:
+        # TODO: handle this in the scopenapi/hema?
+        row["version_date"] = datetime.fromisoformat(row["version_date"])
+    return row
+
+
 def _get_all_events_recursive(db: "Taxonomy", tax_id: str, seen_tax_ids: set | None = None):
     """
     Find all events for a given tax ID and any events for its parent's and
@@ -48,7 +56,7 @@ class Taxonomy:
         self.conn.row_factory = sqlite3.Row  # return Row instead of tuple
         self.cursor = self.conn.cursor()
 
-    def search_names(self, query: str, limit: int = 10) -> list[dict]:
+    def search_names(self, query: str, limit: int | None = 10) -> list[dict]:
         matches = []
 
         # first look for exact mathes (case insensitive)
@@ -59,16 +67,33 @@ class Taxonomy:
             ).fetchall()
         )
 
-        if len(matches) >= limit:
-            return [dict(r) for r in matches]
+        if limit is None or len(matches) < limit:
+            # fuzzy matches
+            matches.extend(
+                self.cursor.execute(
+                    f"""
+                    SELECT taxonomy.tax_id, taxonomy.name, taxonomy.rank, taxonomy.event_name, taxonomy.version_date
+                    FROM name_fts
+                    JOIN taxonomy ON name_fts.name = taxonomy.name
+                    WHERE name_fts MATCH '{query}' order by name_fts.rank
+                    LIMIT {limit}
+                    ;
+                    """
+                ).fetchall()
+            )
 
-        # fuzzy matches
-        matches.extend(
-            self.cursor.execute(
-                f"SELECT * FROM name_fts WHERE name MATCH '{query}' order by rank;"
-            ).fetchall()
-        )
-        return [dict(r) for r in matches][:limit]
+        tax_ids = set()
+        results = []
+
+        for row in matches:
+            # TODO: handle this in the query
+            if row["tax_id"] in tax_ids:
+                continue
+
+            results.append(coerce_row(row))
+            tax_ids.add(row["tax_id"])
+
+        return results[:limit]
 
     def get_events(
         self,

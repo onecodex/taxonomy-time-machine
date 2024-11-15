@@ -6,9 +6,9 @@
 2. [x] Display children of a node
 3. [x] API (maybe just use flask-smorest)
 4. [ ] Deploy!
-5. [ ] Better handling when there are more than one match to a name (e.g.,
+5. [x] Better handling when there are more than one match to a name (e.g.,
    `environmental samples`)
-6. [ ] Proper search / type-ahead box (can fix 5)
+6. [x] Proper search / type-ahead box (can fix 5)
 
 ## Setup
 

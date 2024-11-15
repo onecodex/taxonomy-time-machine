@@ -1,12 +1,9 @@
 <script lang="ts">
-import { defineComponent, ref, watch } from 'vue';
-
-import { formatDate } from '@/utils.ts';
+import { defineComponent, ref, watch, computed } from 'vue';
 
 export default defineComponent({
   name: 'SearchComponent',
   setup() {
-
     const formatDate = (isoDate: string): string => {
       const date = new Date(isoDate);
       const year = date.getFullYear();
@@ -14,7 +11,6 @@ export default defineComponent({
       const day = String(date.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     };
-
 
     // ~~~~~~~~~~~~~~~~~~~
     // reactive properties
@@ -30,11 +26,19 @@ export default defineComponent({
     const lineage = ref<object[]>([]);
     const children = ref<object[]>([]);
 
+    // typeahead stuff
+    const suggestions = ref<object[]>([]);
+    const loading = ref<boolean>(false);
+    const highlightedIndex = ref<number>(-1);
+    const showSuggestions = computed(() => suggestions.value.length > 0);
+
     const emoji = ref<string>('🌳');
 
     // a common place to store errors
     const error = ref<string | null>(null);
     let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const isNumeric = (value) => !isNaN(value) && value !== null && value !== '' && !isNaN(parseFloat(value));
 
@@ -57,12 +61,69 @@ export default defineComponent({
       }
     );
 
-    // Debounced input handler
+    // Input handler with debounce
     const onInput = () => {
-      if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        setTaxId();
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => {
+        fetchSuggestions();
       }, 300);
+    };
+
+    // Fetch suggestions dynamically
+    const fetchSuggestions = async () => {
+      if (!query.value.trim()) {
+        suggestions.value = [];
+        return;
+      }
+  
+      loading.value = true;
+      error.value = null;
+  
+      try {
+        const response = await fetch(
+          `http://localhost:5000/search?query=${encodeURIComponent(query.value)}`
+        );
+        if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+  
+        const data = await response.json();
+        suggestions.value = data;
+      } catch (err) {
+        console.error(err);
+        error.value = 'Failed to fetch suggestions.';
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // Manage selection
+    const selectSuggestion = (suggestion: object) => {
+      query.value = suggestion.name; // Use the `name` field
+      taxId.value = suggestion.tax_id; // Update `taxId` from selected suggestion
+      version.value = suggestion.version_date; // Update version if available
+      suggestions.value = []; // Clear suggestions
+    };
+  
+    // Navigation with keyboard
+    const highlightNext = () => {
+      if (highlightedIndex.value < suggestions.value.length - 1) {
+        highlightedIndex.value++;
+      }
+    };
+  
+    const highlightPrev = () => {
+      if (highlightedIndex.value > 0) {
+        highlightedIndex.value--;
+      }
+    };
+  
+    const selectHighlighted = () => {
+      if (highlightedIndex.value >= 0 && highlightedIndex.value < suggestions.value.length) {
+        selectSuggestion(suggestions.value[highlightedIndex.value]);
+      }
+    };
+  
+    const highlightIndex = (index: number) => {
+      highlightedIndex.value = index;
     };
 
     // this sets taxId
@@ -153,6 +214,8 @@ export default defineComponent({
           emoji.value = "🐄";
       } else if (lineage.value.some(item => item.name === "Serpentes")) {
           emoji.value = "🐍";
+      } else if (lineage.value.some(item => item.name === "Diptera")) {
+          emoji.value = "🪰";
       } else {
           emoji.value = "🌳";
       }
@@ -197,6 +260,15 @@ export default defineComponent({
       updateVersion,
       setTaxId,
       formatDate,
+      suggestions,
+      loading,
+      fetchSuggestions,
+      selectSuggestion,
+      showSuggestions,
+      highlightNext,
+      highlightPrev,
+      selectHighlighted,
+      highlightIndex
     };
   },
 });
@@ -210,17 +282,48 @@ export default defineComponent({
 
   <!-- Search -->
 
+
   <section class="section">
     <div class="container">
       <div class="field">
         <div class="control is-expanded">
-          <input
-            class="input has-text-success is-primary is-large"
-            type="text"
-            v-model="query"
-            placeholder="Seach for a name or tax ID"
-            @input="onInput"
-          />
+          <div class="search-component">
+            <input
+              class="input has-text-success is-primary is-large"
+              type="text"
+              v-model="query"
+              @input="onInput"
+              @keydown.down.prevent="highlightNext"
+              @keydown.up.prevent="highlightPrev"
+              @keydown.enter.prevent="selectHighlighted"
+              placeholder="Enter taxonomic query..."
+            />
+          </div>
+        
+          <!-- Suggestions Dropdown -->
+
+          <div class="dropdown" :class="{ 'is-active': showSuggestions }">
+            <div class="dropdown-menu" role="menu">
+              <div class="dropdown-content">
+                <div v-if="loading" class="dropdown-item has-text-centered">Loading...</div>
+                <div v-else-if="error" class="dropdown-item has-text-danger">
+                  Error fetching suggestions
+                </div>
+                <a
+                  v-for="(suggestion, index) in suggestions"
+                  :key="index"
+                  class="dropdown-item is-large"
+                  :class="{ 'is-active': index === highlightedIndex }"
+                  @mousedown.prevent="selectSuggestion(suggestion)"
+                  @mouseover="highlightIndex(index)"
+                >
+                  {{ suggestion.name }} ({{ suggestion.tax_id }})
+                </a>
+              </div>
+            </div>
+          </div>
+
+
         </div>
       </div>
     </div>
