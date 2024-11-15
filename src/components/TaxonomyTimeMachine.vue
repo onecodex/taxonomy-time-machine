@@ -36,7 +36,6 @@ export default defineComponent({
 
     // a common place to store errors
     const error = ref<string | null>(null);
-    let timeout: ReturnType<typeof setTimeout> | null = null;
 
     let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -75,16 +74,16 @@ export default defineComponent({
         suggestions.value = [];
         return;
       }
-  
+
       loading.value = true;
       error.value = null;
-  
+
       try {
         const response = await fetch(
           `http://localhost:5000/search?query=${encodeURIComponent(query.value)}`
         );
         if (!response.ok) throw new Error(`API error: ${response.statusText}`);
-  
+
         const data = await response.json();
         suggestions.value = data;
       } catch (err) {
@@ -102,26 +101,26 @@ export default defineComponent({
       version.value = suggestion.version_date; // Update version if available
       suggestions.value = []; // Clear suggestions
     };
-  
+
     // Navigation with keyboard
     const highlightNext = () => {
       if (highlightedIndex.value < suggestions.value.length - 1) {
         highlightedIndex.value++;
       }
     };
-  
+
     const highlightPrev = () => {
       if (highlightedIndex.value > 0) {
         highlightedIndex.value--;
       }
     };
-  
+
     const selectHighlighted = () => {
       if (highlightedIndex.value >= 0 && highlightedIndex.value < suggestions.value.length) {
         selectSuggestion(suggestions.value[highlightedIndex.value]);
       }
     };
-  
+
     const highlightIndex = (index: number) => {
       highlightedIndex.value = index;
     };
@@ -299,10 +298,10 @@ export default defineComponent({
               @keydown.down.prevent="highlightNext"
               @keydown.up.prevent="highlightPrev"
               @keydown.enter.prevent="selectHighlighted"
-              placeholder="Enter taxonomic query..."
+              placeholder="Search for a name or tax ID..."
             />
           </div>
-        
+
           <!-- Suggestions Dropdown -->
 
           <div class="dropdown" :class="{ 'is-active': showSuggestions }">
@@ -356,7 +355,7 @@ export default defineComponent({
   <section class="section">
     <div class="container">
       <div class="columns">
-        
+
         <!-- Lineage table -->
         <div class="column auto">
           <div v-if="!!lineage.length">
