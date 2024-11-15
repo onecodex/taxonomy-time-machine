@@ -269,7 +269,7 @@ export default defineComponent({
       highlightNext,
       highlightPrev,
       selectHighlighted,
-      highlightIndex
+      highlightedIndex,
     };
   },
 });
