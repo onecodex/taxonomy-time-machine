@@ -62,9 +62,7 @@ class Taxonomy:
         # first look for exact mathes (case insensitive)
         # LIKE is too slow...
         matches.extend(
-            self.cursor.execute(
-                f"SELECT * from taxonomy WHERE lower(name) = lower('{query}');"
-            ).fetchall()
+            self.cursor.execute(f"SELECT * from taxonomy WHERE name LIKE '{query}%';").fetchall()
         )
 
         if limit is None or len(matches) < limit:

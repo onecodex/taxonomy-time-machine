@@ -286,7 +286,10 @@ export default defineComponent({
   <section class="section">
     <div class="container">
       <div class="field">
-        <div class="control is-expanded">
+        <div
+            class="control is-expanded is-large"
+            :class="{ 'is-loading': loading === true }"
+        >
           <div class="search-component">
             <input
               class="input has-text-success is-primary is-large"
@@ -305,8 +308,7 @@ export default defineComponent({
           <div class="dropdown" :class="{ 'is-active': showSuggestions }">
             <div class="dropdown-menu" role="menu">
               <div class="dropdown-content">
-                <div v-if="loading" class="dropdown-item has-text-centered">Loading...</div>
-                <div v-else-if="error" class="dropdown-item has-text-danger">
+                <div v-if="error" class="dropdown-item has-text-danger">
                   Error fetching suggestions
                 </div>
                 <a
