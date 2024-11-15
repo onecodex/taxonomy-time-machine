@@ -42,6 +42,7 @@ class ChildrenQuerySchema(ma.Schema):
 class TaxonSchema(ma.Schema):
     event_name = ma.fields.String()
     name = ma.fields.String()
+    rank = ma.fields.String()
     tax_id = ma.fields.Integer()
     parent_id = ma.fields.Integer(allow_none=True)
     version_date = ma.fields.NaiveDateTime()
