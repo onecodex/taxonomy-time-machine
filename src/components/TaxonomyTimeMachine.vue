@@ -72,6 +72,8 @@ export default defineComponent({
     const fetchSuggestions = async () => {
       if (!query.value.trim()) {
         suggestions.value = [];
+        version.value = null;
+        taxId.value = null;
         return;
       }
 
@@ -266,6 +268,7 @@ export default defineComponent({
       fetchSuggestions,
       selectSuggestion,
       showSuggestions,
+      highlightIndex,
       highlightNext,
       highlightPrev,
       selectHighlighted,
@@ -329,33 +332,22 @@ export default defineComponent({
 
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- TODO make the error look more error-y -->
-  <div v-if="error" class="error">{{ error }}</div>
 
-  <section class="section">
-    <div class="container">
-      <nav class="breadcrumb" aria-label="breadcrumbs">
+      <nav class="breadcrumb is-centered has-succeeds-separator" aria-label="breadcrumbs">
         <ul>
           <li
             v-for="v in versions"
             :class="{ 'is-active': v.version_date === version }"
             >
-            <a href="#" @click.prevent="updateVersion(v.version_date)">
+            <a href="#" @click.prevent="updateVersion(v.version_date)" >
               {{ formatDate(v.version_date) }}
             </a>
           </li>
         </ul>
       </nav>
-    </div>
-  </section>
 
-  <!-- Results -->
 
-  <section class="section">
-    <div class="container">
       <div class="columns">
 
         <!-- Lineage table -->
@@ -408,20 +400,14 @@ export default defineComponent({
           </div>
         </div>
 
-
-
       </div>
     </div>
   </section>
 
-  <section class="section">
-    <div class="container">
-      <div class="columns">
+  <!-- TODO make the error look more error-y -->
 
-      </div>
-    </div>
+  <!-- Results -->
 
-  </section>
 
 </template>
 
