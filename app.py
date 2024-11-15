@@ -10,6 +10,7 @@ app = Flask(__name__)
 app.config["API_TITLE"] = "Taxonomy Time Machine"
 app.config["API_VERSION"] = "v1"
 app.config["OPENAPI_VERSION"] = "3.0.2"
+app.config["OPENAPI_URL_PREFIX"] = "/"
 api = Api(app)
 
 # TODO: we can cut down on the number of DB queries by fetching the events
