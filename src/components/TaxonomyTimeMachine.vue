@@ -118,6 +118,8 @@ export default defineComponent({
 
       const data = await response.json();
 
+      lineage.value = data || [];
+
       if (lineage.value.some(item => item.name === "Fungi")) {
           emoji.value = "🍄";
       } else if (lineage.value.some(item => item.name === "Bacteria")) {
@@ -141,8 +143,6 @@ export default defineComponent({
       } else {
           emoji.value = "🌳";
       }
-
-      lineage.value = data || [];
     };
 
     // Fetch function with types for API handling
