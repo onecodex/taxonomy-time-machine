@@ -56,7 +56,7 @@ class VersionSchema(ma.Schema):
 def _coerce_row(row):
     row = dict(row)
     if "version_date" in row:
-        # TODO: handle this in the schema?
+        # TODO: handle this in the scopenapi/hema?
         row["version_date"] = datetime.fromisoformat(row["version_date"])
     return row
 
@@ -119,7 +119,6 @@ class Lineage(MethodView):
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
         db = Taxonomy()
-        print(args)
         tax_id = args["tax_id"]
         version = args.get("version_date")
 

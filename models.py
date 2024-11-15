@@ -56,8 +56,6 @@ class Taxonomy:
             ).fetchall()
         )
 
-        print(matches)
-
         if len(matches) >= limit:
             return [dict(r) for r in matches]
 
@@ -130,6 +128,7 @@ class Taxonomy:
         """Get the collapsed list of dates at which a taxon's lineage
         changed"""
         events = _get_all_events_recursive(db=self, tax_id=tax_id)
+
         return sorted({e["version_date"] for e in events})
 
     def get_lineage(self, tax_id: str, as_of: datetime | None = None):

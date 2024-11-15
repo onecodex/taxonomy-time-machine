@@ -1,6 +1,7 @@
 <script lang="ts">
 import { defineComponent, ref, watch } from 'vue';
 
+
 export default defineComponent({
   name: 'SearchComponent',
   setup() {
@@ -91,7 +92,7 @@ export default defineComponent({
         return
       }
 
-      const response = await fetch(`http://localhost:5000/children?tax_id=${encodeURIComponent(taxId.value)}&version=${encodeURIComponent(version.value)}`);
+      const response = await fetch(`http://localhost:5000/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value)}`);
 
       if (!response.ok) {
         throw new Error('API request failed');
@@ -189,13 +190,6 @@ export default defineComponent({
 </script>
 
 <template>
-  <section>
-    <h2>Debug</h2>
-    <code>taxId={{ taxId }}</code>
-    <code>version={{ version }}</code>
-  </section>
-
-
 
   <div class="container">
 
@@ -222,7 +216,9 @@ export default defineComponent({
         <h2>Versions</h2>
         <ol class="ul">
           <li v-for="version in versions">
-            <a href="#" @click.prevent="updateVersion(version.version_date)">{{ version.version_date }}</a>
+            <a href="#" @click.prevent="updateVersion(version.version_date)">
+              {{ version.version_date }}
+            </a>
           </li>
         </ol>
       </div>
@@ -240,12 +236,18 @@ export default defineComponent({
               </tr>
             </thead>
             <tr v-for="node in lineage">
-              <td>{{ node.tax_id }}</td>
+              <td>
+                <a href="#" @click.prevent="updateTaxId(node.tax_id)">
+                  {{ node.tax_id }}
+                </a>
+              </td>
               <td>{{ node.name }}</td>
               <td>{{ node.rank }}</td>
             </tr>
           </table>
         </div>
+
+        <p>Showing lineage of Tax ID <code>{{ taxId }}</code> from <code>{{ version }}</code></p>
       </div>
 
       <!-- children table -->
@@ -261,7 +263,9 @@ export default defineComponent({
               </tr>
             </thead>
             <tr v-for="node in children">
-              <td>{{ node.tax_id }}</td>
+              <a href="#" @click.prevent="updateTaxId(node.tax_id)">
+                {{ node.tax_id }}
+              </a>
               <td>{{ node.name }}</td>
               <td>{{ node.rank }}</td>
             </tr>
