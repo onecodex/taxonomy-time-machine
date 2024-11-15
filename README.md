@@ -7,8 +7,18 @@
 3. [ ] Fix bug where we sometimes find irrelevant events in the history because
    two events cancel each other out
    - easy fix: just deduplicate the history table
-4. [ ] API (maybe just use flask-smorest)
+4. [x] API (maybe just use flask-smorest)
 5. [ ] Deploy!
+6. [ ] Better handling when there are more than one match to a name (e.g.,
+   `environmental samples`)
+7. [ ] Instead of showing a list of version dates, allow the user to select the
+   date (maybe with a neat timeline UI element). This would also help with some
+   bugs where we only show the versions where a node's lineage changed (and not
+   the ones where its children changes7. [ ] Instead of showing a list of
+   version dates, allow the user to select the date (maybe with a neat timeline
+   UI element). This would also help with some bugs where we only show the
+   versions where a node's lineage changed (and not the ones where its children
+   changed)
 
 ## Setup
 

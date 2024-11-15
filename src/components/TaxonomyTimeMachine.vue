@@ -280,7 +280,7 @@ export default defineComponent({
         <!-- Children table -->
         <div class="column auto">
           <div v-if="!!children.length">
-            <h2>Children</h2>
+            <h2>Children (n={{ children.length }})</h2>
             <table class="table">
               <thead>
                 <tr>

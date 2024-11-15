@@ -118,7 +118,7 @@ class Taxonomy:
         rows = [r for r in rows if "sp. " not in r["name"]]
 
         # TODO: pagination
-        rows = rows[:20]
+        rows = rows
         return rows
 
     def get_all_events_recursive(self, tax_id: str) -> list[dict]:

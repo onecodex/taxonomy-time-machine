@@ -125,6 +125,22 @@ class Lineage(MethodView):
         return db.get_lineage(tax_id=tax_id, as_of=version)[::-1]
 
 
+VERSION_DATES = [
+    datetime(2010, 12, 31),
+    datetime(2014, 12, 31),
+    datetime(2015, 12, 31),
+    datetime(2016, 12, 31),
+    datetime(2017, 12, 31),
+    datetime(2018, 12, 31),
+    datetime(2019, 12, 31),
+    datetime(2020, 12, 31),
+    datetime(2021, 12, 31),
+    datetime(2022, 12, 31),
+    datetime(2023, 12, 31),
+    datetime(2024, 12, 31),
+]
+
+
 @blp.route("/versions")
 class Versions(MethodView):
     @blp.arguments(ChildrenQuerySchema, location="query")
@@ -132,8 +148,10 @@ class Versions(MethodView):
     def get(self, args):
         db = Taxonomy()
         tax_id = args.get("tax_id")
+        versions = db.get_versions(tax_id=tax_id)
         if tax_id:
-            return [{"version_date": v} for v in db.get_versions(tax_id=tax_id)]
+            resp = [{"version_date": v} for v in versions]
+            return resp
         else:
             return []
 
