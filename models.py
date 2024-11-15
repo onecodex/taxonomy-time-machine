@@ -91,7 +91,7 @@ class Taxonomy:
                     LIMIT ?
                     ;
                     """,
-                    (query, limit),
+                    (f'"{query}"', limit or 10),
                 ).fetchall()
             )
 

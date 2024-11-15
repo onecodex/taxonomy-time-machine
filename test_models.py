@@ -27,6 +27,12 @@ def test_search_names(db):
     assert matches
 
 
+def test_search_names_special_characters(db):
+    matches = db.search_names("/1985", limit=10)
+
+    assert matches == []
+
+
 def test_get_events(db):
     events = db.get_events("498019")
     assert events
