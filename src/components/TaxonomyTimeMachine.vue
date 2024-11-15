@@ -215,6 +215,8 @@ export default defineComponent({
           emoji.value = "🐍";
       } else if (lineage.value.some(item => item.name === "Diptera")) {
           emoji.value = "🪰";
+      } else if (lineage.value.some(item => item.name === "Dinosauria")) {
+          emoji.value = "🦖";
       } else {
           emoji.value = "🌳";
       }
