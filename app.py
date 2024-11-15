@@ -122,7 +122,7 @@ class Lineage(MethodView):
         tax_id = args["tax_id"]
         version = args.get("version_date")
 
-        return db.get_lineage(tax_id=tax_id, as_of=version)
+        return db.get_lineage(tax_id=tax_id, as_of=version)[::-1]
 
 
 @blp.route("/versions")

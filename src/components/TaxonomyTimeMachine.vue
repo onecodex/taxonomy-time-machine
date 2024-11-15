@@ -1,10 +1,20 @@
 <script lang="ts">
 import { defineComponent, ref, watch } from 'vue';
 
+import { formatDate } from '@/utils.ts';
 
 export default defineComponent({
   name: 'SearchComponent',
   setup() {
+
+    const formatDate = (isoDate: string): string => {
+      const date = new Date(isoDate);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based, so add 1
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
 
     // ~~~~~~~~~~~~~~~~~~~
     // reactive properties
@@ -57,6 +67,7 @@ export default defineComponent({
 
     // this sets taxId
     const setTaxId = async() => {
+      version.value = null;
       if (isNumeric(query.value)) {
         taxId.value = query.value
       } else {
@@ -66,6 +77,7 @@ export default defineComponent({
 
     const findTaxId = async() => {
       if (query.value == null || !query.value.toString().trim()) {
+        taxId.value = null;
         return;
       }
 
@@ -184,102 +196,126 @@ export default defineComponent({
       updateTaxId,
       updateVersion,
       setTaxId,
+      formatDate,
     };
   },
 });
 </script>
 
 <template>
-
+  <!-- Header -->
   <div class="container">
-
-    <h1 class="title has-text-primary">{{ emoji }} Taxonomy Time Machine</h1>
-
-    <div class="field">
-      <label class="label">Search for a name or tax ID</label>
-      <div class="control">
-        <input
-          class="input has-text-success is-primary is-large"
-          type="text"
-          v-model="query"
-          placeholder="Type to search... (example: 498019)"
-          @input="onInput"
-        />
-      </div>
-    </div>
-
-    <div v-if="error" class="error">{{ error }}</div>
-
-    <div class="columns">
-
-      <div class="column is-one-fifth">
-        <h2>Versions</h2>
-        <ol class="ul">
-          <li v-for="version in versions">
-            <a href="#" @click.prevent="updateVersion(version.version_date)">
-              {{ version.version_date }}
-            </a>
-          </li>
-        </ol>
-      </div>
-
-      <!-- lineage table -->
-      <div class="column auto">
-        <div v-if="lineage">
-          <h2>Lineage</h2>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>tax_id</th>
-                <th>name</th>
-                <th>rank</th>
-              </tr>
-            </thead>
-            <tr v-for="node in lineage">
-              <td>
-                <a href="#" @click.prevent="updateTaxId(node.tax_id)">
-                  {{ node.tax_id }}
-                </a>
-              </td>
-              <td>{{ node.name }}</td>
-              <td>{{ node.rank }}</td>
-            </tr>
-          </table>
-        </div>
-
-        <p>Showing lineage of Tax ID <code>{{ taxId }}</code> from <code>{{ version }}</code></p>
-      </div>
-
-      <!-- children table -->
-      <div class="column auto">
-        <div v-if="children">
-          <h2>Children</h2>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>tax_id</th>
-                <th>name</th>
-                <th>rank</th>
-              </tr>
-            </thead>
-            <tr v-for="node in children">
-              <a href="#" @click.prevent="updateTaxId(node.tax_id)">
-                {{ node.tax_id }}
-              </a>
-              <td>{{ node.name }}</td>
-              <td>{{ node.rank }}</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-
-    </div>
-
+    <p class="title">{{ emoji }} Taxonomy Time Machine</p>
   </div>
 
+  <!-- Search -->
 
-  <hr/>
+  <section class="section">
+    <div class="container">
+      <div class="field">
+        <div class="control is-expanded">
+          <input
+            class="input has-text-success is-primary is-large"
+            type="text"
+            v-model="query"
+            placeholder="Seach for a name or tax ID"
+            @input="onInput"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
 
+  <!-- TODO make the error look more error-y -->
+  <div v-if="error" class="error">{{ error }}</div>
+
+  <section class="section">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+          <li
+            v-for="v in versions"
+            :class="{ 'is-active': v.version_date === version }"
+            >
+            <a href="#" @click.prevent="updateVersion(v.version_date)">
+              {{ formatDate(v.version_date) }}
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </section>
+
+  <!-- Results -->
+
+  <section class="section">
+    <div class="container">
+      <div class="columns">
+        
+        <!-- Lineage table -->
+        <div class="column auto">
+          <div v-if="!!lineage.length">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Name</th>
+                  <th>Tax ID</th>
+                </tr>
+              </thead>
+              <tr v-for="node in lineage">
+                <td>{{ node.rank }}</td>
+                <td>{{ node.name }}</td>
+                <td>
+                  <a href="#" @click.prevent="updateTaxId(node.tax_id)">
+                    {{ node.tax_id }}
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <p>Showing lineage of Tax ID <code>{{ taxId }}</code> from <code>{{ version }}</code></p>
+          </div>
+        </div>
+
+        <!-- Children table -->
+        <div class="column auto">
+          <div v-if="!!children.length">
+            <h2>Children</h2>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Name</th>
+                  <th>Tax ID</th>
+                </tr>
+              </thead>
+              <tr v-for="node in children">
+                <td>{{ node.rank }}</td>
+                <td>{{ node.name }}</td>
+                <td>
+                  <a href="#" @click.prevent="updateTaxId(node.tax_id)">
+                    {{ node.tax_id }}
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+
+
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="columns">
+
+      </div>
+    </div>
+
+  </section>
 
 </template>
 
