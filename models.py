@@ -2,6 +2,8 @@ import sqlite3
 from datetime import datetime
 from typing import Literal
 
+from functools import lru_cache
+
 
 def coerce_row(row):
     row = dict(row)
@@ -56,13 +58,25 @@ class Taxonomy:
         self.conn.row_factory = sqlite3.Row  # return Row instead of tuple
         self.cursor = self.conn.cursor()
 
+    @lru_cache
     def search_names(self, query: str, limit: int | None = 10) -> list[dict]:
         matches = []
+
+        # first, check if the query is tax-ID like
+        if query.isnumeric():
+            rows = self.cursor.execute(
+                "SELECT * FROM taxonomy WHERE tax_id = ? ORDER BY version_date desc LIMIT 1",
+                (query,),
+            ).fetchall()
+
+            matches.extend([dict(r) for r in rows])
 
         # first look for exact mathes (case insensitive)
         # LIKE is too slow...
         matches.extend(
-            self.cursor.execute(f"SELECT * from taxonomy WHERE name LIKE '{query}%';").fetchall()
+            self.cursor.execute(
+                f"SELECT * FROM taxonomy WHERE name LIKE ?;", (f"{query}%",)
+            ).fetchall()
         )
 
         if limit is None or len(matches) < limit:
@@ -73,10 +87,11 @@ class Taxonomy:
                     SELECT taxonomy.tax_id, taxonomy.name, taxonomy.rank, taxonomy.event_name, taxonomy.version_date
                     FROM name_fts
                     JOIN taxonomy ON name_fts.name = taxonomy.name
-                    WHERE name_fts MATCH '{query}' order by name_fts.rank
-                    LIMIT {limit}
+                    WHERE name_fts MATCH ? order by name_fts.rank
+                    LIMIT ?
                     ;
-                    """
+                    """,
+                    (query, limit),
                 ).fetchall()
             )
 
@@ -93,6 +108,7 @@ class Taxonomy:
 
         return results[:limit]
 
+    @lru_cache
     def get_events(
         self,
         tax_id: str,
@@ -102,7 +118,12 @@ class Taxonomy:
         """Get all events for a given tax_id or parent_id depending on
         query_key (default='tax_id')"""
 
-        self.cursor.execute(f"SELECT * FROM taxonomy WHERE {query_key} = {tax_id};")
+        if query_key == "tax_id":
+            self.cursor.execute(f"SELECT * FROM taxonomy WHERE tax_id = ?;", (tax_id,))
+        elif query_key == "parent_id":
+            self.cursor.execute(f"SELECT * FROM taxonomy WHERE parent_id = ?;", (tax_id,))
+        else:
+            raise Exception(f"Unable to use handle {query_key=}")
 
         rows = [dict(r) for r in self.cursor.fetchall()]
 
@@ -118,6 +139,7 @@ class Taxonomy:
 
         return rows
 
+    @lru_cache
     def get_children(self, tax_id: str, as_of=None):
         """Get all children of a node at a given version"""
 
@@ -147,9 +169,11 @@ class Taxonomy:
         rows = rows
         return rows
 
+    @lru_cache
     def get_all_events_recursive(self, tax_id: str) -> list[dict]:
         return _get_all_events_recursive(db=self, tax_id=tax_id)
 
+    @lru_cache
     def get_versions(self, tax_id: str) -> list[datetime]:
         """Get the collapsed list of dates at which a taxon's lineage
         changed"""
@@ -172,6 +196,7 @@ class Taxonomy:
 
         return versions_with_changes
 
+    @lru_cache
     def get_lineage(self, tax_id: str, as_of: datetime | None = None):
         """
         Given a tax_id: return the taxonomy lineage. If `as_of` is specified,
