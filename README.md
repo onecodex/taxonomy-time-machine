@@ -41,7 +41,7 @@ npm run dev
 
 Instead of storing every version of the taxonomy table in its entirety, only
 _differences_ between version `n` and `n+1` are stored for every version of the
-taxonomy database loaded. This allows for massive space savings: () while
+taxonomy database loaded. This allows for massive (98.4%) space savings while
 providing a data structure for which writing useful queries is still
 straightforward.
 
