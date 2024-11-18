@@ -127,9 +127,9 @@ for n, taxdump in enumerate(taxdumps):
 
     print()
 
-print(f"--- {len(total_seen_taxa)=:,}")
+print(f"--- {total_seen_taxa=:,}")
 print(f"--- {len(data_to_insert)=:,}")
-print(f"--- savings={len(data_to_insert) / len(total_seen_taxa)=:.2%}")
+print(f"--- savings={1 - (len(data_to_insert) / total_seen_taxa):.2%}")
 
 
 # Connect to the SQLite database
