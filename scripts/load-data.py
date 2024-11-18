@@ -48,10 +48,14 @@ tax_id_to_node: dict = {}
 data_to_insert = []
 last_tax_ids: None | set[str] = None
 
+total_seen_taxa = 0
+
 for n, taxdump in enumerate(taxdumps):
     taxdump_date = dump_path_to_datetime(taxdump)
     tax = taxonomy.Taxonomy.from_ncbi(str(taxdump))
     print(f"--- loaded {taxdump}: {tax}")
+
+    total_seen_taxa += len(tax)
 
     # we infer deleted nodes by comparing the tax IDs in the current dump to those
     # found in the previous dump
@@ -122,6 +126,10 @@ for n, taxdump in enumerate(taxdumps):
         print(f"    {event_name.value:>10} -> {count:,}")
 
     print()
+
+print(f"--- {len(total_seen_taxa)=:,}")
+print(f"--- {len(data_to_insert)=:,}")
+print(f"--- savings={len(data_to_insert) / len(total_seen_taxa)=:.2%}")
 
 
 # Connect to the SQLite database
