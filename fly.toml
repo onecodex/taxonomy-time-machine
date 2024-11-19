@@ -6,7 +6,11 @@
 app = 'taxonomy-time-machine'
 primary_region = 'sjc'
 
-console_command = "curl 'https://refgenomics-science.s3.us-east-1.amazonaws.com/scratch/audy/events.db?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA6GPUEB7CIPS4UI67%2F20241119%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241119T004116Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=80fbca816c76c2b6b965429805131429292950038fcfa9c1ca9905bec3d63d0c' | gzip -d > events.db service nginx start && python /app/backend/app.py"
+console_command = "service nginx start && python /app/backend/app.py"
+
+[mounts]
+  source = "data"
+  destination = "/data"
 
 [build]
 
