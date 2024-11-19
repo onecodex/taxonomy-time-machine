@@ -15,7 +15,7 @@ RUN npm install && npm run build
 FROM python:3.11-slim
 
 # Install required dependencies
-RUN apt-get update && apt-get install -y nginx && \
+RUN apt-get update && apt-get install -y nginx curl gzip && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
