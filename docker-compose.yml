@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  time-machine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /appdata/
+    volumes:
+      - ./backend:/appdata
+    ports:
+      - "8080:80"

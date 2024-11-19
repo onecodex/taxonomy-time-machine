@@ -9,10 +9,15 @@ interface TaxonVersion {
   version_date: string | null;
 }
 
+
 export default defineComponent({
   name: "SearchComponent",
   setup() {
-    const formatDate = (isoDate: string): string => {
+    const formatDate = (isoDate: string | null): string => {
+      if (isoDate === null) {
+        return '';
+      }
+
       const date = new Date(isoDate);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are zero-based, so add 1
@@ -48,10 +53,9 @@ export default defineComponent({
     let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const isNumeric = (value: null | string | number) =>
-      !isNaN(value) &&
       value !== null &&
       value !== "" &&
-      !isNaN(parseFloat(value));
+      !isNaN(Number(value));
 
     // Watcher to reset error state on query change
     watch(query, () => {
@@ -80,7 +84,7 @@ export default defineComponent({
 
     // Fetch suggestions dynamically
     const fetchSuggestions = async () => {
-      if (!query.value.trim()) {
+      if (!(query.value || '').trim()) {
         suggestions.value = [];
         version.value = null;
         taxId.value = null;
@@ -92,7 +96,7 @@ export default defineComponent({
 
       try {
         const response = await fetch(
-          `http://localhost:5000/search?query=${encodeURIComponent(query.value)}`,
+          `${window.location.origin}/api/search?query=${encodeURIComponent(query.value || '')}`,
         );
         if (!response.ok) throw new Error(`API error: ${response.statusText}`);
 
@@ -107,7 +111,7 @@ export default defineComponent({
     };
 
     // Manage selection
-    const selectSuggestion = (suggestion: object) => {
+    const selectSuggestion = (suggestion: TaxonVersion) => {
       query.value = suggestion.name; // Use the `name` field
       taxId.value = suggestion.tax_id; // Update `taxId` from selected suggestion
       version.value = suggestion.version_date; // Update version if available
@@ -157,7 +161,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `http://localhost:5000/search?query=${encodeURIComponent(query.value)}`,
+        `${window.location.origin}/api/search?query=${encodeURIComponent(query.value || '')}`,
       );
 
       if (!response.ok) {
@@ -182,7 +186,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `http://localhost:5000/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value)}`,
+        `${window.location.origin}/api/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
       );
 
       if (!response.ok) {
@@ -202,7 +206,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `http://localhost:5000/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value)}`,
+        `${window.location.origin}/api/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
       );
 
       if (!response.ok) {
@@ -251,7 +255,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `http://localhost:5000/versions?tax_id=${encodeURIComponent(taxId.value)}`,
+        `${window.location.origin}/api/versions?tax_id=${encodeURIComponent(taxId.value)}`,
       );
       if (!response.ok) {
         throw new Error("API request failed");
@@ -265,7 +269,7 @@ export default defineComponent({
       taxId.value = argTaxId;
     };
 
-    const updateVersion = (argVersion: string) => {
+    const updateVersion = (argVersion: string | null) => {
       version.value = argVersion;
     };
 
