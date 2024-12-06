@@ -6,7 +6,11 @@ from datetime import datetime
 
 @pytest.fixture
 def db():
-    return Taxonomy()
+    return Taxonomy(database_path="events.db")
+
+
+def test_merged(db):
+    pass
 
 
 def test_search_names(db):

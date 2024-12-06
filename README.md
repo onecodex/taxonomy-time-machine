@@ -16,6 +16,24 @@
 11. [ ] Add buttons to load interesting example queries
 12. [ ] add descriptions and explanatory text to the page
 
+## Types of Taxonomic Changes
+
+- [x] `ALTER` change to one or more of the following, but the `tax_id` remains
+  the same:
+    - `parent_id`
+    - `rank`
+    - `name`
+- [ ] `MERGE` merger of `tax_id` into another `tax_id`
+    - TODO: store these as `tax_id` and `parent_id` but then filter out `MERGED` events when we're getting lineages
+    - [ ] Resolve the `tax_id` to the `current_tax_id` by finding the *latest*
+      merge event...
+    - [ ] Render the merge events on the front-end
+- [ ] `DELETE` removal of a `tax_id`. This can be determined by one or both of
+  the following:
+    - `tax_id` in `delnodes.dmp`
+    - `tax_id` is present in `t` but not `t+1`
+    - [ ] Render the delete events on the front-end
+
 ## Setup
 
 ```sh

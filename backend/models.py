@@ -25,8 +25,6 @@ def _get_all_events_recursive(db: "Taxonomy", tax_id: str, seen_tax_ids: set | N
     lineage
     """
 
-    events = db.get_events(tax_id=tax_id)
-
     events: list[dict] = []
 
     if seen_tax_ids is None:
@@ -53,7 +51,7 @@ def _get_all_events_recursive(db: "Taxonomy", tax_id: str, seen_tax_ids: set | N
 
 
 class Taxonomy:
-    def __init__(self, database_path: str = "events.db"):
+    def __init__(self, database_path: str = "/data/events.db"):
         self.conn = sqlite3.connect(database_path)
         self.conn.row_factory = sqlite3.Row  # return Row instead of tuple
         self.cursor = self.conn.cursor()
@@ -75,7 +73,7 @@ class Taxonomy:
         # LIKE is too slow...
         matches.extend(
             self.cursor.execute(
-                f"SELECT * FROM taxonomy WHERE name LIKE ?;", (f"{query}%",)
+                "SELECT * FROM taxonomy WHERE name LIKE ?;", (f"{query}%",)
             ).fetchall()
         )
 
@@ -83,7 +81,7 @@ class Taxonomy:
             # fuzzy matches
             matches.extend(
                 self.cursor.execute(
-                    f"""
+                    """
                     SELECT taxonomy.tax_id, taxonomy.name, taxonomy.rank, taxonomy.event_name, taxonomy.version_date
                     FROM name_fts
                     JOIN taxonomy ON name_fts.name = taxonomy.name
@@ -119,9 +117,9 @@ class Taxonomy:
         query_key (default='tax_id')"""
 
         if query_key == "tax_id":
-            self.cursor.execute(f"SELECT * FROM taxonomy WHERE tax_id = ?;", (tax_id,))
+            self.cursor.execute("SELECT * FROM taxonomy WHERE tax_id = ?;", (tax_id,))
         elif query_key == "parent_id":
-            self.cursor.execute(f"SELECT * FROM taxonomy WHERE parent_id = ?;", (tax_id,))
+            self.cursor.execute("SELECT * FROM taxonomy WHERE parent_id = ?;", (tax_id,))
         else:
             raise Exception(f"Unable to use handle {query_key=}")
 
@@ -162,11 +160,10 @@ class Taxonomy:
 
         rows = [r for r in latest_row_by_tax_id.values() if r["parent_id"] == tax_id]
 
+        # Get rid of a bunch of `sp.` nodes for brevity
         # TODO: make this toggle-able
         rows = [r for r in rows if "sp. " not in r["name"]]
 
-        # TODO: pagination
-        rows = rows
         return rows
 
     @lru_cache
@@ -201,7 +198,7 @@ class Taxonomy:
         return versions_with_changes
 
     @lru_cache
-    def get_lineage(self, tax_id: str, as_of: datetime | None = None):
+    def get_lineage(self, tax_id: str, as_of: datetime | None = None) -> list[dict]:
         """
         Given a tax_id: return the taxonomy lineage. If `as_of` is specified,
         return the taxonomy lineage as of that date.

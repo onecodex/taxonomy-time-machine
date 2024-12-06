@@ -5,6 +5,7 @@ from models import Taxonomy
 from pathlib import Path
 from datetime import datetime
 
+
 event_taxonomy = Taxonomy(database_path="events.db")
 
 taxdumps = sorted(
@@ -23,6 +24,7 @@ for n, dump in enumerate(taxdumps, start=1):
             print(f"checked {n:,} nodes")
 
         db_lineage = list(event_taxonomy.get_lineage(tax_id))
+        print([x["name"] for x in db_lineage])
         tax_lineage = tax.lineage(tax_id)
 
         db_names = [x["name"] for x in db_lineage]

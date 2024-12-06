@@ -9,6 +9,7 @@ from datetime import datetime
 from dataclasses import dataclass
 from enum import Enum
 
+from typing import Literal, TypedDict
 import sqlite3
 
 # iterate over tax_id, parent_id, name, rank
@@ -30,25 +31,42 @@ last_version: dict[int, dict] = {}
 class EventName(Enum):
     Create = "create"
     Delete = "delete"
-    Merge = "merge"
     Alter = "alter"
+    Merge = "merge"
 
 
 @dataclass
 class Event:
     event_name: EventName
-    id: int | None = None
-    parent_id: int | None = None
-    name: str | None = None
-    rank: str | None = None
+    id: int
+    parent_id: int | None
+    name: str | None
+    rank: str | None
+
+
+class Row(TypedDict):
+    event_name: Literal["create", "delete", "alter", "merge"]
+    version_date: str
+    tax_id: int
+    parent_id: int | None
+    name: str | None
+    rank: str | None
 
 
 n_events = 0
+total_seen_taxa = 0
+
 tax_id_to_node: dict = {}
-data_to_insert = []
+data_to_insert: list[Row] = []
 last_tax_ids: None | set[str] = None
 
-total_seen_taxa = 0
+# `merged.dmp` is appended to with each version; so we need to
+# only record *new* entries in merged.dmp. This set lets us track
+# that easily
+seen_merged_tax_ids: set[int] = set()
+
+taxdumps = taxdumps[::20]
+
 
 for n, taxdump in enumerate(taxdumps):
     taxdump_date = dump_path_to_datetime(taxdump)
@@ -63,6 +81,8 @@ for n, taxdump in enumerate(taxdumps):
     event_counts: Counter[EventName] = Counter()
     n_new_events = 0
     events: list[Event] = []
+
+    last_merged_tax_ids = set[str]
 
     for tax_id in tax:
         from_node = tax_id_to_node.get(tax_id)
@@ -98,13 +118,34 @@ for n, taxdump in enumerate(taxdumps):
 
         tax_id_to_node[tax_id] = to_node
 
-    # find all the deleted nodes
-
-    # append deletions
+    # find deleted nodes by looking for tax_ids dropped since the last build
     if last_tax_ids is not None:
         for tax_id in last_tax_ids - seen_tax_ids:
-            events.append(Event(event_name=EventName.Delete, id=tax_id))
+            events.append(
+                Event(event_name=EventName.Delete, id=tax_id, parent_id=None, name=None, rank=None)
+            )
     last_tax_ids = seen_tax_ids
+
+    # append merges (merge.dmp is an appended log so we actually only care
+    # about *new* merges)
+    with open(taxdump / "merged.dmp") as handle:
+        for line in handle:
+            parts = line.strip().split("\t")
+            tax_id_1 = int(parts[0])
+            tax_id_2 = int(parts[2])
+
+            if tax_id_1 not in seen_merged_tax_ids:
+                # We just pretend tax_id_2 becomes a
+                # child of tax_id_1 when mergers happen
+                events.append(
+                    Event(
+                        event_name=EventName.Merge,
+                        id=tax_id_2,  # *2* is the *child*
+                        parent_id=tax_id_1,
+                        name=None,
+                        rank=None,
+                    )
+                )
 
     for event in events:
         event_counts[event.event_name] += 1

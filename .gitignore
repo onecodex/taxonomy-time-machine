@@ -1,6 +1,7 @@
 dumps/
 *.csv
 *.db
+*.db.gz
 __pycache__/
 
 #

@@ -18,6 +18,13 @@ api = Api(app)
 
 blp = Blueprint("taxonomy", "taxonomy", url_prefix="/", description="Taxonomy Time Machine API")
 
+# TODO: config using env vars?
+DATABASE_PATH = "events.db"
+
+
+def get_database() -> Taxonomy:
+    return Taxonomy(database_path=DATABASE_PATH)
+
 
 class QueryArgsSchema(ma.Schema):
     query = ma.fields.String()
@@ -59,7 +66,7 @@ class Search(MethodView):
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
         """Return the most recent matching tax ID given a name"""
-        db = Taxonomy()
+        db = get_database()
 
         # fetch a list of matching names
         matches = db.search_names(query=args["query"], limit=10)
@@ -72,7 +79,7 @@ class Events(MethodView):
     @blp.arguments(TaxIdQuerySchema, location="query")
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
-        db = Taxonomy()
+        db = get_database()
         tax_id = args["tax_id"]
         return db.get_events(tax_id=tax_id)
 
@@ -82,7 +89,7 @@ class Children(MethodView):
     @blp.arguments(ChildrenQuerySchema, location="query")
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
-        db = Taxonomy()
+        db = get_database()
         version = args.get("version_date")
         tax_id = args["tax_id"]
 
@@ -95,7 +102,7 @@ class Lineage(MethodView):
     @blp.arguments(ChildrenQuerySchema, location="query")
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
-        db = Taxonomy()
+        db = get_database()
         tax_id = args["tax_id"]
         version = args.get("version_date")
 
@@ -123,7 +130,7 @@ class Versions(MethodView):
     @blp.arguments(ChildrenQuerySchema, location="query")
     @blp.response(200, VersionSchema(many=True))
     def get(self, args):
-        db = Taxonomy()
+        db = get_database()
         tax_id = args.get("tax_id")
         versions = db.get_versions(tax_id=tax_id)
         if tax_id:
