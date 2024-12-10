@@ -2,7 +2,22 @@ import sqlite3
 from datetime import datetime
 from typing import Literal
 
-from functools import lru_cache
+from enum import Enum
+
+
+class EventType(Enum):
+    Create = "create"
+    Delete = "delete"
+    Update = "update"
+
+
+class TaxonomyEvent:
+    id: str
+    parent_id: str
+    name: str
+    rank: str
+    version_date: datetime
+    event_type: EventType
 
 
 def coerce_row(row):
@@ -25,8 +40,6 @@ def _get_all_events_recursive(db: "Taxonomy", tax_id: str, seen_tax_ids: set | N
     lineage
     """
 
-    events = db.get_events(tax_id=tax_id)
-
     events: list[dict] = []
 
     if seen_tax_ids is None:
@@ -39,9 +52,7 @@ def _get_all_events_recursive(db: "Taxonomy", tax_id: str, seen_tax_ids: set | N
 
     for event in db.get_events(tax_id):
         events.append(event)
-
         seen_tax_ids.add(event["tax_id"])
-
         if event["parent_id"] and event["parent_id"] not in seen_tax_ids:
             events.extend(
                 _get_all_events_recursive(db, tax_id=event["parent_id"], seen_tax_ids=seen_tax_ids)
@@ -58,7 +69,6 @@ class Taxonomy:
         self.conn.row_factory = sqlite3.Row  # return Row instead of tuple
         self.cursor = self.conn.cursor()
 
-    @lru_cache
     def search_names(self, query: str, limit: int | None = 10) -> list[dict]:
         matches = []
 
@@ -75,7 +85,7 @@ class Taxonomy:
         # LIKE is too slow...
         matches.extend(
             self.cursor.execute(
-                f"SELECT * FROM taxonomy WHERE name LIKE ?;", (f"{query}%",)
+                "SELECT * FROM taxonomy WHERE name LIKE ?;", (f"{query}%",)
             ).fetchall()
         )
 
@@ -83,7 +93,7 @@ class Taxonomy:
             # fuzzy matches
             matches.extend(
                 self.cursor.execute(
-                    f"""
+                    """
                     SELECT taxonomy.tax_id, taxonomy.name, taxonomy.rank, taxonomy.event_name, taxonomy.version_date
                     FROM name_fts
                     JOIN taxonomy ON name_fts.name = taxonomy.name
@@ -108,7 +118,6 @@ class Taxonomy:
 
         return results[:limit]
 
-    @lru_cache
     def get_events(
         self,
         tax_id: str,
@@ -119,9 +128,9 @@ class Taxonomy:
         query_key (default='tax_id')"""
 
         if query_key == "tax_id":
-            self.cursor.execute(f"SELECT * FROM taxonomy WHERE tax_id = ?;", (tax_id,))
+            self.cursor.execute("SELECT * FROM taxonomy WHERE tax_id = ?;", (tax_id,))
         elif query_key == "parent_id":
-            self.cursor.execute(f"SELECT * FROM taxonomy WHERE parent_id = ?;", (tax_id,))
+            self.cursor.execute("SELECT * FROM taxonomy WHERE parent_id = ?;", (tax_id,))
         else:
             raise Exception(f"Unable to use handle {query_key=}")
 
@@ -139,13 +148,33 @@ class Taxonomy:
 
         return rows
 
-    @lru_cache
-    def get_children(self, tax_id: str, as_of=None):
+    def get_children(self, tax_id: str, as_of: datetime | None = None):
         """Get all children of a node at a given version"""
+
+        # 1. find all? rows where parent_id=query_tax_id using their tax_ids
+        # ....
 
         # find all create/alter events where parent_id = tax_id and
         # version_date <= as_of
-        events = self.get_events(tax_id=tax_id, as_of=as_of, query_key="parent_id")
+        parent_events = self.get_events(tax_id=tax_id, as_of=as_of, query_key="parent_id")
+
+        # 2. find most recent event by tax ID and make sure that the parent is
+        # *still* query_tax_id. remove these rows
+
+        child_tax_ids = {e["tax_id"] for e in parent_events}
+
+        child_events = []
+
+        # TODO: do this in a single db query
+        for child_tax_id in child_tax_ids:
+            if ee := self.get_events(tax_id=child_tax_id, as_of=as_of, query_key="tax_id"):
+                child_events.append(ee[-1])
+
+        keep_tax_ids = {c["tax_id"] for c in child_events if str(c["parent_id"]) == tax_id}
+
+        events = [e for e in parent_events if e["tax_id"] in keep_tax_ids]
+
+        # 3. TODO remove any deleted rows
 
         # for each tax ID, get the *latest* parent_id
         # if that parent_id == tax_id then keep it
@@ -160,23 +189,26 @@ class Taxonomy:
             ):
                 latest_row_by_tax_id[event["tax_id"]] = event
 
-        rows = [r for r in latest_row_by_tax_id.values() if r["parent_id"] == tax_id]
+        # if the taxon moved then we can't find it by parent ID because it has
+        # a new parent ID... so we need to look up each individual taxon's
+        # events to check for moves and deletions...
 
-        # TODO: make this toggle-able
-        rows = [r for r in rows if "sp. " not in r["name"]]
+        # make sure the row is still a child of tax_id
+        rows = [r for r in latest_row_by_tax_id.values() if str(r["parent_id"]) == tax_id]
 
-        # TODO: pagination
-        rows = rows
+        # remove anything that got deleted
+        rows = [r for r in rows if r["event_name"] != "delete"]
+
         return rows
 
-    @lru_cache
     def get_all_events_recursive(self, tax_id: str) -> list[dict]:
         return _get_all_events_recursive(db=self, tax_id=tax_id)
 
-    @lru_cache
     def get_versions(self, tax_id: str) -> list[datetime]:
         """Get the collapsed list of dates at which a taxon's lineage
         changed"""
+
+        # TODO: handle deletions (example: 352463)
 
         events = _get_all_events_recursive(db=self, tax_id=tax_id)
         version_dates = sorted({e["version_date"] for e in events})
@@ -186,6 +218,9 @@ class Taxonomy:
 
         for version_date in version_dates:
             events = self.get_lineage(tax_id=tax_id, as_of=version_date)
+
+            # TODO: can a tax_id by deleted and created in the same version?
+            # TODO: can a tax_id be re-created after being deleted?
 
             key = tuple([(e["rank"], e["tax_id"], e["parent_id"], e["name"]) for e in events])
 
@@ -200,7 +235,6 @@ class Taxonomy:
 
         return versions_with_changes
 
-    @lru_cache
     def get_lineage(self, tax_id: str, as_of: datetime | None = None):
         """
         Given a tax_id: return the taxonomy lineage. If `as_of` is specified,
