@@ -6,12 +6,13 @@ A web application and database for quickly browsing and comparing different
 versions of the NCBI taxonomy database.
 
 
-> [!NOTE]
+> [!NOTE] *Archives Wanted!*
 > Archives of the NCBI taxonomy database only go as far
 back as 2014. However, we suspect that there are even older versions collecting
 dust on old HPCs, laptops, CD-ROMs and other ancient storage media. If you
 think you have an old copy of `taxdump.tar.gz`, even if you don't know where
-it's from, please send it to us so that we can add it to the archive!
+it's from, please send it to us (open a ticket)! You may be holding a valuable
+ancient artifact.
 
 ## Setup
 
