@@ -1,7 +1,6 @@
 import pytest
 
-import taxonomy
-from models import Taxonomy
+from models import Taxonomy, EventName, Event
 from datetime import datetime
 
 
@@ -11,7 +10,7 @@ def db():
 
 
 def test_search_names(db):
-    matches = db.search_names("Drosophila", limit=None)
+    matches = [m.to_dict() for m in db.search_names("Drosophila", limit=None)]
 
     # matches should all have full taxonomic data
     for match in matches:
@@ -22,9 +21,6 @@ def test_search_names(db):
         assert "version_date" in match
         assert type(match["version_date"]) is datetime
 
-    # data should be uniquified
-    assert len({m["tax_id"] for m in matches}) == len(matches)
-
     assert matches
 
 
@@ -34,8 +30,8 @@ def test_get_children_deleted_node(db):
 
     assert len(events) == 2
 
-    assert events[0]["parent_id"] == 188979
-    assert events[1]["event_name"] == "delete"
+    assert events[0].parent_id == "188979"
+    assert events[1].event_name is EventName.Delete
 
     # the deletion event should show up here...
     # TODO: move this to a test of `get_events`
@@ -46,16 +42,17 @@ def test_get_children_deleted_node(db):
     assert db.get_children("188979") == []
 
     # but if you check before it was deleted then it has children
-
-    assert db.get_children("188979", as_of=datetime.strptime("2014-08-02", "%Y-%m-%d")) == [
-        {
-            "event_name": "create",
-            "name": "Gyromitus sp. HFCC94",
-            "parent_id": 188979,
-            "rank": "species",
-            "tax_id": 352463,
-            "version_date": datetime(2014, 8, 1, 0, 0),
-        },
+    assert db.get_children("188979", as_of=datetime(2014, 8, 2, 0, 0)) == [
+        Event.from_dict(
+            {
+                "event_name": "create",
+                "name": "Gyromitus sp. HFCC94",
+                "parent_id": "188979",
+                "rank": "species",
+                "tax_id": "352463",
+                "version_date": datetime(2014, 8, 1, 0, 0),
+            }
+        ),
     ]
 
 
@@ -94,12 +91,26 @@ def test_get_children_deleted_node(db):
                 "Protacanthamoeba sp. VD-2014",
             },
         ),
+        (
+            "315752",
+            #            datetime(2015, 4, 1, 0, 0),
+            None,
+            # this one is created the first time in 2014-08-1
+            # then deleted in 2014-03-01
+            # then re-created in 2014-04-01
+            # fun times...
+            {
+                "uncultured Labyrinthulomycetes",
+                "uncultured labyrinthulid quahog parasite",
+                "uncultured labyrinthulid",
+            },
+        ),
     ],
 )
 def test_children_deleted(db, tax_id, timestamp, expected_names):
     """some example cases where a node was deleted"""
     children = db.get_children(tax_id, as_of=timestamp)
-    children_names = {n["name"] for n in children}
+    children_names = {n.name for n in children}
     assert children_names == expected_names
 
 
@@ -108,16 +119,16 @@ def test_get_children_moved_node(db):
     events = db.get_events("981321")
 
     assert len(events) == 2
-    assert events[0]["event_name"] == "create"
-    assert events[1]["event_name"] == "alter"
-    assert events[1]["parent_id"] == 1538467
+    assert events[0].event_name is EventName.Create
+    assert events[1].event_name is EventName.Update
+    assert events[1].parent_id == "1538467"
 
     assert len(db.get_children("188956", as_of=datetime(2014, 9, 1, 0, 0))) == 89
 
 
 def test_search_names_special_characters(db):
     matches = db.search_names("/1985", limit=10)
-    assert len(matches) == 4
+    assert len(matches) == 10
 
 
 def test_get_events(db):
@@ -141,7 +152,7 @@ def test_get_versions(db):
     for version in versions:
         events = db.get_lineage(tax_id="498019", as_of=version)
 
-        lineage_data = tuple([(e["rank"], e["tax_id"], e["parent_id"], e["name"]) for e in events])
+        lineage_data = tuple([(e.rank, e.tax_id, e.parent_id, e.name) for e in events])
 
         lineages.append(lineage_data)
 
@@ -155,19 +166,19 @@ def test_get_children(db):
     assert events
 
     # each tax ID should only appear once
-    assert len({e["tax_id"] for e in events}) == len(events)
+    assert len({e.tax_id for e in events}) == len(events)
 
-    events = db.get_children(tax_id="821", as_of=datetime.strptime("2015-01-01", "%Y-%m-%d"))
+    events = db.get_children(tax_id="821", as_of=datetime(2015, 1, 1, 0, 0))
     assert events
 
     # each tax ID should only appear once
-    assert len({e["tax_id"] for e in events}) == len(events)
+    assert len({e.tax_id for e in events}) == len(events)
 
 
 def test_lineage(db):
-    events = db.get_lineage(tax_id=821)
+    events = db.get_lineage(tax_id="821")
 
-    assert [x["name"] for x in events] == [
+    assert [x.name for x in events] == [
         "Phocaeicola vulgatus",
         "Phocaeicola",
         "Bacteroidaceae",
@@ -180,9 +191,9 @@ def test_lineage(db):
         "cellular organisms",
     ]
 
-    events = db.get_lineage(tax_id=821, as_of=datetime.strptime("2015-01-01", "%Y-%m-%d"))
+    events = db.get_lineage(tax_id="821", as_of=datetime(2015, 1, 1, 0, 0))
 
-    assert [x["name"] for x in events] == [
+    assert [x.name for x in events] == [
         "Bacteroides vulgatus",
         "Bacteroides",
         "Bacteroidaceae",

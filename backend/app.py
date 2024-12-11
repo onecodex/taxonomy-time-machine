@@ -1,4 +1,4 @@
-from models import Taxonomy, coerce_row
+from taxonomy_time_machine.models import Taxonomy
 from datetime import datetime
 
 from flask import Flask
@@ -28,7 +28,7 @@ class TaxIdQuerySchema(ma.Schema):
 
 
 class ChildrenQuerySchema(ma.Schema):
-    tax_id = ma.fields.Integer()
+    tax_id = ma.fields.String()
     version_date = ma.fields.NaiveDateTime(required=False, allow_none=True)
 
     @ma.pre_load
@@ -44,8 +44,8 @@ class TaxonSchema(ma.Schema):
     event_name = ma.fields.String()
     name = ma.fields.String()
     rank = ma.fields.String()
-    tax_id = ma.fields.Integer()
-    parent_id = ma.fields.Integer(allow_none=True)
+    tax_id = ma.fields.String()
+    parent_id = ma.fields.String(allow_none=True)
     version_date = ma.fields.NaiveDateTime()
 
 
