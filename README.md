@@ -6,7 +6,7 @@ A web application and database for quickly browsing and comparing different
 versions of the NCBI taxonomy database.
 
 
-> [!HELP]
+> [!NOTE]
 > Archives of the NCBI taxonomy database only go as far
 back as 2014. However, we suspect that there are even older versions collecting
 dust on old HPCs, laptops, CD-ROMs and other ancient storage media. If you
