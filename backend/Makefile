@@ -14,5 +14,5 @@ events-all.db: dumps
 		--always-insert \
 		--db-path $@
 
-test-lineages: events.db
+check-lineages: events.db
 	./taxonomy_time_machine/check_lineages.py

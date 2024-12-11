@@ -21,6 +21,7 @@ def parse_args():
         help="Always insert nodes instead of only inserting deltas",
     )
     parser.add_argument("--db-path", required=True, type=str, help="path to output sqltie database")
+    parser.add_argument("--n-dumps", default=None, type=int, help="Only add first n taxonomy dumps")
     return parser.parse_args()
 
 
@@ -44,6 +45,10 @@ def main() -> None:
     total_seen_taxa = 0
 
     last_tax = None
+
+    if args.n_dumps:
+        print(f"--- using first {args.n_dumps} taxdump archives")
+        taxdumps = taxdumps[: args.n_dumps]
 
     for n, taxdump in enumerate(taxdumps):
         taxdump_date = dump_path_to_datetime(taxdump)

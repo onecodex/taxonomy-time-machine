@@ -96,7 +96,7 @@ export default defineComponent({
 
       try {
         const response = await fetch(
-          `${window.location.origin}/api/search?query=${encodeURIComponent(query.value || '')}`,
+          `http://localhost:5000/search?query=${encodeURIComponent(query.value || '')}`,
         );
         if (!response.ok) throw new Error(`API error: ${response.statusText}`);
 
@@ -161,7 +161,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${window.location.origin}/api/search?query=${encodeURIComponent(query.value || '')}`,
+        `http://localhost:5000/search?query=${encodeURIComponent(query.value || '')}`,
       );
 
       if (!response.ok) {
@@ -186,7 +186,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${window.location.origin}/api/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
+        `http://localhost:5000/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
       );
 
       if (!response.ok) {
@@ -206,7 +206,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${window.location.origin}/api/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
+        `http://localhost:5000/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
       );
 
       if (!response.ok) {
@@ -255,7 +255,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${window.location.origin}/api/versions?tax_id=${encodeURIComponent(taxId.value)}`,
+        `http://localhost:5000/versions?tax_id=${encodeURIComponent(taxId.value)}`,
       );
       if (!response.ok) {
         throw new Error("API request failed");
