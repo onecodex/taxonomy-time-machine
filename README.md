@@ -17,7 +17,7 @@ ancient artifact.
 
 ## Setup
 
-```sh
+```bash
 # install python dependencies
 uv venv --seed
 . venv/bin/activate
@@ -51,7 +51,7 @@ Parameters:
 
 Example:
 
-```sh
+```bash
 curl 'https://taxonomy.onecodex.com/api/lineage?tax_id=821&version_date=2014-10-22T00%3A00%3A00' | jq 
 [
   ...
@@ -76,7 +76,7 @@ Parameters:
 
 Example:
 
-```sh
+```bash
 curl 'https://taxonomy.onecodex.com/api/search?query=bacteroides%20dorei%CAG' | jq 
 
 [
@@ -101,7 +101,7 @@ Parameters:
 
 Example:
 
-```sh
+```bash
 curl 'https://taxonomy.onecodex.com/api/events?tax_id=821' | jq 
 
 [
@@ -130,7 +130,7 @@ Parameters:
 
 Example:
 
-```sh
+```bash
 curl 'https://taxonomy.onecodex.com/api/children?tax_id=1&version_date=2010-10-22T00%3A00%3A00' | jq 
 [
   ...
