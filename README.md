@@ -45,7 +45,7 @@ Return the taxonomic lineage for a given tax ID at a specific time
 Parameters:
 
 - `tax_id` (`str`)
-- `version_date` (`str`) - ISO-formatted datetime string. If provided, the
+- `version_date` (`str`) - ISO8601-formatted datetime string. If provided, the
   children of `tax_id` at the specific time will be returned. Otherwise, the
   current children will be returned
 
@@ -124,7 +124,7 @@ Return direct descendants for a given tax ID
 Parameters:
 
 - `tax_id` (`str`)
-- `version_date` (`str`) - ISO-formatted datetime string. If provided, the
+- `version_date` (`str`) - ISO8601-formatted datetime string. If provided, the
   children of `tax_id` at the specific time will be returned. Otherwise, the
   current children will be returned
 
