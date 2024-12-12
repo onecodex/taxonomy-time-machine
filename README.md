@@ -13,7 +13,7 @@ back as 2014. However, we suspect that there are even older versions collecting
 dust on old HPCs, laptops, CD-ROMs and other ancient storage media. If you
 think you have an old copy of `taxdump.tar.gz`, even if you don't know where
 it's from, please send it to us (open a ticket)! You may be holding a valuable
-ancient artifact.
+relic.
 
 ## Setup
 
