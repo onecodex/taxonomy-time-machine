@@ -35,3 +35,113 @@ python app.py
 # start the frontend
 npm run dev
 ```
+
+## API Documentation
+
+### `api/lineage`
+
+Return the taxonomic lineage for a given tax ID at a specific time
+
+Parameters:
+
+- `tax_id` (`str`)
+- `version_date` (`str`) - ISO-formatted datetime string. If provided, the
+  children of `tax_id` at the specific time will be returned. Otherwise, the
+  current children will be returned
+
+Example:
+
+```sh
+curl 'https://taxonomy.onecodex.com/api/lineage?tax_id=821&version_date=2014-10-22T00%3A00%3A00' | jq 
+[
+  ...
+  {
+    "event_name": "create",
+    "name": "cellular organisms",
+    "parent_id": 1,
+    "rank": "no rank",
+    "tax_id": 131567,
+    "version_date": "2010-10-22T00:00:00"
+  },
+]
+```
+
+### `/api/search`
+
+Search all taxonomic events by a tax ID or partial name
+
+Parameters:
+
+- `query` (`str`): query (tax ID or name)
+
+Example:
+
+```sh
+curl 'https://taxonomy.onecodex.com/api/search?query=bacteroides%20dorei%CAG' | jq 
+
+[
+  {
+    "event_name": "create",
+    "name": "Bacteroides dorei CAG:222",
+    "parent_id": 139043,
+    "rank": "species",
+    "tax_id": 1263042,
+    "version_date": "2014-08-01T00:00:00"
+  }
+]
+```
+
+### `api/events`
+
+Return taxonomic events given a Tax ID
+
+Parameters:
+
+- `tax_id` (`str`): query (tax ID)
+
+Example:
+
+```sh
+curl 'https://taxonomy.onecodex.com/api/events?tax_id=821' | jq 
+
+[
+  {
+    "event_name": "create",
+    "name": "Bacteroides vulgatus",
+    "parent_id": 816,
+    "rank": "species",
+    "tax_id": 821,
+    "version_date": "2010-10-22T00:00:00"
+  },
+  ...
+]
+```
+
+### `api/children`
+
+Return direct descendants for a given tax ID
+
+Parameters:
+
+- `tax_id` (`str`)
+- `version_date` (`str`) - ISO-formatted datetime string. If provided, the
+  children of `tax_id` at the specific time will be returned. Otherwise, the
+  current children will be returned
+
+Example:
+
+```sh
+curl 'https://taxonomy.onecodex.com/api/children?tax_id=1&version_date=2010-10-22T00%3A00%3A00' | jq 
+[
+  ...
+  {
+    "event_name": "create",
+    "name": "Viroids",
+    "parent_id": 1,
+    "rank": "no rank",
+    "tax_id": 12884,
+    "version_date": "2010-10-22T00:00:00"
+  },
+]
+```
+
