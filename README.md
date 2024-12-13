@@ -5,6 +5,20 @@ https://taxonomy.onecodex.com
 A web application and database for quickly browsing and comparing different
 versions of the NCBI taxonomy database.
 
+:paperclip: [preprint](https://www.biorxiv.org/content/10.1101/2024.12.11.627987v1)
+
+Please Cite:
+
+```
+@article{Davis-Richardson2024.12.11.627987,
+    author = {Davis-Richardson, Austin and Reynolds, Timothy},
+    title = {A Time Machine for Taxonomy},
+    journal = {bioRxiv},
+    year = {2024},
+    doi = {10.1101/2024.12.11.627987}
+}
+```
+
 
 > [!NOTE]
 > **Archives Wanted!**
