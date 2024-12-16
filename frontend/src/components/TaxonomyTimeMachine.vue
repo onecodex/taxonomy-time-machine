@@ -9,7 +9,6 @@ interface TaxonVersion {
   version_date: string | null;
 }
 
-
 export default defineComponent({
   name: "SearchComponent",
   setup() {
@@ -74,6 +73,10 @@ export default defineComponent({
       fetchChildren();
     });
 
+    const getApiBase = () => {
+        return __API_BASE__ || `${window.location.origin}/api`
+    }
+
     // Input handler with debounce
     const onInput = () => {
       if (debounceTimeout) clearTimeout(debounceTimeout);
@@ -96,7 +99,7 @@ export default defineComponent({
 
       try {
         const response = await fetch(
-          `${window.location.origin}/api/search?query=${encodeURIComponent(query.value || '')}`,
+          `${getApiBase()}/search?query=${encodeURIComponent(query.value || '')}`,
         );
         if (!response.ok) throw new Error(`API error: ${response.statusText}`);
 
@@ -161,7 +164,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${window.location.origin}/api/search?query=${encodeURIComponent(query.value || '')}`,
+        `${getApiBase()}/search?query=${encodeURIComponent(query.value || '')}`,
       );
 
       if (!response.ok) {
@@ -186,7 +189,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${window.location.origin}/api/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
+        `${getApiBase()}/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
       );
 
       if (!response.ok) {
@@ -206,7 +209,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${window.location.origin}/api/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
+        `${getApiBase()}/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
       );
 
       if (!response.ok) {
@@ -255,7 +258,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${window.location.origin}/api/versions?tax_id=${encodeURIComponent(taxId.value)}`,
+        `${getApiBase()}/versions?tax_id=${encodeURIComponent(taxId.value)}`,
       );
       if (!response.ok) {
         throw new Error("API request failed");
