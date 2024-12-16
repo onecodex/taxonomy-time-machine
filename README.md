@@ -44,7 +44,7 @@ npm install
 make
 
 # start the backend
-python app.py
+FLASK_DEBUG=true python app.py
 
 # start the frontend
 npm run dev
