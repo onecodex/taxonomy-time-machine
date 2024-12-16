@@ -11,7 +11,17 @@ interface TaxonVersion {
 
 export default defineComponent({
   name: "SearchComponent",
-  setup() {
+  // see vite.config.ts
+  props: { 
+    apiBase: {
+      type: String,
+      required: true,
+    }
+  },
+  setup(props) {
+
+    const apiBase = props.apiBase || `${window.location.origin}/api`;
+
     const formatDate = (isoDate: string | null): string => {
       if (isoDate === null) {
         return '';
@@ -73,10 +83,6 @@ export default defineComponent({
       fetchChildren();
     });
 
-    const getApiBase = () => {
-        return __API_BASE__ || `${window.location.origin}/api`
-    }
-
     // Input handler with debounce
     const onInput = () => {
       if (debounceTimeout) clearTimeout(debounceTimeout);
@@ -99,7 +105,7 @@ export default defineComponent({
 
       try {
         const response = await fetch(
-          `${getApiBase()}/search?query=${encodeURIComponent(query.value || '')}`,
+          `${apiBase}/search?query=${encodeURIComponent(query.value || '')}`,
         );
         if (!response.ok) throw new Error(`API error: ${response.statusText}`);
 
@@ -164,7 +170,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${getApiBase()}/search?query=${encodeURIComponent(query.value || '')}`,
+        `${apiBase}/search?query=${encodeURIComponent(query.value || '')}`,
       );
 
       if (!response.ok) {
@@ -189,7 +195,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${getApiBase()}/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
+        `${apiBase}/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
       );
 
       if (!response.ok) {
@@ -209,7 +215,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${getApiBase()}/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
+        `${apiBase}/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
       );
 
       if (!response.ok) {
@@ -258,7 +264,7 @@ export default defineComponent({
       }
 
       const response = await fetch(
-        `${getApiBase()}/versions?tax_id=${encodeURIComponent(taxId.value)}`,
+        `${apiBase}/versions?tax_id=${encodeURIComponent(taxId.value)}`,
       );
       if (!response.ok) {
         throw new Error("API request failed");

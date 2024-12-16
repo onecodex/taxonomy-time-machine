@@ -2,10 +2,10 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 
 // https://vite.dev/config/
-export default defineConfig(({ command, mode, isSsrBuild, isPreview }) => {
+export default defineConfig(({ command }) => {
   return {
     define: {
-      __API_BASE__:
+      "import.meta.env.VITE_API_BASE":
         command === "serve"
           ? JSON.stringify("http://localhost:5000")
           : JSON.stringify(null),
