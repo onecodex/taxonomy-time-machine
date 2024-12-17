@@ -1,6 +1,7 @@
 from taxonomy_time_machine.models import Taxonomy
 from datetime import datetime
 
+import os
 from flask import Flask
 from flask.views import MethodView
 import marshmallow as ma
@@ -17,6 +18,8 @@ api = Api(app)
 # first and then filtering them ...
 
 blp = Blueprint("taxonomy", "taxonomy", url_prefix="/", description="Taxonomy Time Machine API")
+
+DATABASE_PATH = os.environ.get("DATABASE_PATH", "events.db")
 
 
 class QueryArgsSchema(ma.Schema):
@@ -59,7 +62,7 @@ class Search(MethodView):
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
         """Return the most recent matching tax ID given a name"""
-        db = Taxonomy()
+        db = Taxonomy(database_path=DATABASE_PATH)
 
         # fetch a list of matching names
         matches = db.search_names(query=args["query"], limit=10)
@@ -72,7 +75,7 @@ class Events(MethodView):
     @blp.arguments(TaxIdQuerySchema, location="query")
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
-        db = Taxonomy()
+        db = Taxonomy(database_path=DATABASE_PATH)
         tax_id = args["tax_id"]
         return db.get_events(tax_id=tax_id)
 
@@ -82,7 +85,7 @@ class Children(MethodView):
     @blp.arguments(ChildrenQuerySchema, location="query")
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
-        db = Taxonomy()
+        db = Taxonomy(database_path=DATABASE_PATH)
         version = args.get("version_date")
         tax_id = args["tax_id"]
 
@@ -95,7 +98,7 @@ class Lineage(MethodView):
     @blp.arguments(ChildrenQuerySchema, location="query")
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
-        db = Taxonomy()
+        db = Taxonomy(database_path=DATABASE_PATH)
         tax_id = args["tax_id"]
         version = args.get("version_date")
 
@@ -123,7 +126,7 @@ class Versions(MethodView):
     @blp.arguments(ChildrenQuerySchema, location="query")
     @blp.response(200, VersionSchema(many=True))
     def get(self, args):
-        db = Taxonomy()
+        db = Taxonomy(database_path=DATABASE_PATH)
         tax_id = args.get("tax_id")
         versions = db.get_versions(tax_id=tax_id)
         if tax_id:

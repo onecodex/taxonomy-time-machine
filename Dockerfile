@@ -38,5 +38,7 @@ RUN ln -s /etc/nginx/sites-available/vuejs-flask /etc/nginx/sites-enabled/
 # Expose ports for Flask API and Nginx
 EXPOSE 80
 
+ENV DATABASE_PATH=/data/events.db
+
 # Command to start Nginx and Flask
 CMD service nginx start && python /app/backend/app.py
