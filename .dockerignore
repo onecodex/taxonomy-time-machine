@@ -1,2 +1,6 @@
 backend/dumps
 backend/*.db
+backend/*.db.*
+*.db
+*.db.*
+frontend/node_modules/
