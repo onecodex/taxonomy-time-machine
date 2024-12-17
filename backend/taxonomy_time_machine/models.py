@@ -109,7 +109,7 @@ class Taxonomy:
             [
                 dict(r)
                 for r in self.cursor.execute(
-                    "SELECT * FROM taxonomy WHERE name LIKE ?;", (f"{query}%",)
+                    "SELECT * FROM taxonomy WHERE name LIKE ? LIMIT ?;", (f"{query}%", 10)
                 ).fetchall()
             ]
         )
@@ -128,7 +128,7 @@ class Taxonomy:
                     LIMIT ?
                     ;
                     """,
-                        (f'"{query}"', limit or 10),
+                        (f'"{query}"', 10),
                     ).fetchall()
                 ]
             )

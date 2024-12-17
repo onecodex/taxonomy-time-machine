@@ -1,6 +1,6 @@
 import pytest
 
-from models import Taxonomy, EventName, Event
+from taxonomy_time_machine.models import Taxonomy, EventName, Event
 from datetime import datetime
 
 
