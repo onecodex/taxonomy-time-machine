@@ -187,7 +187,7 @@ def test_get_children(db):
 
 
 def test_lineage(db):
-    events = db.get_lineage(tax_id="821")
+    events = db.get_lineage(tax_id="821", as_of=datetime(2024, 12, 11, 0, 0))
 
     assert [x.name for x in events] == [
         "Phocaeicola vulgatus",
