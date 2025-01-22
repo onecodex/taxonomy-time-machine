@@ -146,9 +146,22 @@ class Taxonomy:
         matches = sorted(matches, key=lambda m: len(m["name"]))
 
         # exact matches should always come first
-        # + truncate to limit
         # + convert to Events
-        events = [Event.from_dict(m) for m in (exact_matches + matches)[:limit]]
+        events = [Event.from_dict(m) for m in (exact_matches + matches)]
+
+        # deduplicate by name, taking most-recent
+        name_to_event: dict[str, Event] = {}
+        for event in events:
+            existing_event = name_to_event.get(event.name)
+            if existing_event is None:
+                name_to_event[event.name] = event
+            elif existing_event.version_date < event.version_date:
+                name_to_event[event.name] = event
+
+        events = list(name_to_event.values())
+
+        # + truncate to limit
+        events = events[:limit]
 
         return events
 
