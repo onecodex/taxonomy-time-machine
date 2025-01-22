@@ -24,6 +24,17 @@ def test_search_names(db):
     assert matches
 
 
+def test_search_names_numeric(db):
+    # first hit should always be exact tax ID match
+    matches = [m.to_dict() for m in db.search_names("4932", limit=None)]
+    assert matches[0]["name"] == "Saccharomyces cerevisiae"
+
+
+def test_match_should_be_most_specific(db):
+    matches = [m.to_dict() for m in db.search_names("Saccharomyces cere", limit=None)]
+    assert matches[0]["name"] == "Saccharomyces cerevisiae"
+
+
 def test_get_children_deleted_node(db):
     # currently, this node has no children because it was deleted
     events = db.get_events("352463")

@@ -92,7 +92,8 @@ class Taxonomy:
         self.cursor = self.conn.cursor()
 
     def search_names(self, query: str, limit: int | None = 10) -> list[Event]:
-        matches = []
+        matches: list[dict] = []
+        exact_matches: list[dict] = []
 
         # first, check if the query is tax-ID like
         if query.isnumeric():
@@ -101,20 +102,27 @@ class Taxonomy:
                 (query,),
             ).fetchall()
 
-            matches.extend([dict(r) for r in rows])
+            exact_matches.extend([dict(r) for r in rows])
 
-        # first look for exact mathes (case insensitive)
-        # LIKE is too slow...
-        matches.extend(
-            [
-                dict(r)
-                for r in self.cursor.execute(
-                    "SELECT * FROM taxonomy WHERE name LIKE ? LIMIT ?;", (f"{query}%", 10)
-                ).fetchall()
-            ]
-        )
+        if limit is None or (len(matches) + len(exact_matches) < limit):
+            # first look for exact mathes (case insensitive)
+            # LIKE is too slow...
+            matches.extend(
+                [
+                    dict(r)
+                    for r in self.cursor.execute(
+                        """SELECT *
+                        FROM taxonomy
+                        WHERE name LIKE ?
+                        ORDER BY LENGTH(name) ASC
+                        LIMIT ?;
+                        """,
+                        (f"{query}%", 10),
+                    ).fetchall()
+                ]
+            )
 
-        if limit is None or len(matches) < limit:
+        if limit is None or (len(matches) + len(exact_matches)) < limit:
             # fuzzy matches
             matches.extend(
                 [
@@ -124,7 +132,8 @@ class Taxonomy:
                     SELECT taxonomy.tax_id, taxonomy.name, taxonomy.rank, taxonomy.event_name, taxonomy.version_date
                     FROM name_fts
                     JOIN taxonomy ON name_fts.name = taxonomy.name
-                    WHERE name_fts MATCH ? order by name_fts.rank
+                    WHERE name_fts MATCH ?
+                    ORDER BY LENGTH(taxonomy.name) ASC
                     LIMIT ?
                     ;
                     """,
@@ -133,14 +142,15 @@ class Taxonomy:
                 ]
             )
 
-        matches_events = [Event.from_dict(m) for m in matches]
+        # sort by closest match (probably the shortest)
+        matches = sorted(matches, key=lambda m: len(m["name"]))
 
-        results = []
+        # exact matches should always come first
+        # + truncate to limit
+        # + convert to Events
+        events = [Event.from_dict(m) for m in (exact_matches + matches)[:limit]]
 
-        for row in matches_events:
-            results.append(row)
-
-        return results[:limit]
+        return events
 
     def get_events(
         self,
