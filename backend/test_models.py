@@ -24,6 +24,23 @@ def test_search_names(db):
     assert matches
 
 
+def test_search_names_numeric(db):
+    # first hit should always be exact tax ID match
+    matches = [m.to_dict() for m in db.search_names("4932", limit=None)]
+    assert matches[0]["name"] == "Saccharomyces cerevisiae"
+
+
+def test_match_should_be_most_specific(db):
+    matches = [m.to_dict() for m in db.search_names("Saccharomyces cere", limit=None)]
+    assert matches[0]["name"] == "Saccharomyces cerevisiae"
+
+
+def test_match_should_be_deduplicated(db):
+    matches = [m.to_dict() for m in db.search_names("h5n1 subtype", limit=None)]
+    assert len(matches) == 1
+    assert matches[0]["name"] == "H5N1 subtype"
+
+
 def test_get_children_deleted_node(db):
     # currently, this node has no children because it was deleted
     events = db.get_events("352463")
@@ -128,7 +145,7 @@ def test_get_children_moved_node(db):
 
 def test_search_names_special_characters(db):
     matches = db.search_names("/1985", limit=10)
-    assert len(matches) == 10
+    assert len(matches) == 4
 
 
 def test_get_events(db):
@@ -176,7 +193,7 @@ def test_get_children(db):
 
 
 def test_lineage(db):
-    events = db.get_lineage(tax_id="821")
+    events = db.get_lineage(tax_id="821", as_of=datetime(2024, 12, 11, 0, 0))
 
     assert [x.name for x in events] == [
         "Phocaeicola vulgatus",

@@ -155,7 +155,7 @@ def main() -> None:
     # as GTDB-Tk which lack IDs
     # (you can use the name as the ID)
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS taxonomy (
+    CREATE TABLE taxonomy (
         event_name TEXT,
         version_date DATETIME,
         tax_id TEXT,

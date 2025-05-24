@@ -32,19 +32,22 @@ relic.
 ## Setup
 
 ```bash
+# in backend/
+
 # install python dependencies
 uv venv --seed
 . venv/bin/activate
 uv pip install
-
-# front-end
-npm install
 
 # fetch data, create events.db
 make
 
 # start the backend
 FLASK_DEBUG=true python app.py
+
+# in frontend/
+
+npm install
 
 # start the frontend
 npm run dev
