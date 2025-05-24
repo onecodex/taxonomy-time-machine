@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime
 from typing import Literal
+from functools import lru_cache
 
 from dataclasses import dataclass
 from enum import Enum
@@ -91,6 +92,8 @@ class Taxonomy:
         self.conn.row_factory = sqlite3.Row  # return Row instead of tuple
         self.cursor = self.conn.cursor()
 
+
+    @lru_cache(maxsize=128)
     def search_names(self, query: str, limit: int | None = 10) -> list[Event]:
         matches: list[dict] = []
         exact_matches: list[dict] = []
@@ -165,6 +168,8 @@ class Taxonomy:
 
         return events
 
+
+    @lru_cache(maxsize=256)
     def get_events(
         self,
         tax_id: str,
@@ -188,6 +193,8 @@ class Taxonomy:
 
         return sorted(rows, key=lambda r: r.version_date)
 
+
+    @lru_cache(maxsize=256)
     def get_children(self, tax_id: str, as_of: datetime | None = None):
         """Get all children of a node at a given version"""
 
@@ -252,6 +259,7 @@ class Taxonomy:
     def get_all_events_recursive(self, tax_id: str) -> list[Event]:
         return _get_all_events_recursive(db=self, tax_id=tax_id)
 
+    @lru_cache(maxsize=256)
     def get_versions(self, tax_id: str) -> list[datetime]:
         """Get the collapsed list of dates at which a taxon's lineage
         changed"""
@@ -283,6 +291,8 @@ class Taxonomy:
 
         return versions_with_changes
 
+
+    @lru_cache(maxsize=256)
     def get_lineage(self, tax_id: str, as_of: datetime | None = None):
         """
         Given a tax_id: return the taxonomy lineage. If `as_of` is specified,
