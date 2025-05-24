@@ -282,6 +282,12 @@ export default defineComponent({
       version.value = argVersion;
     };
 
+    // --- Add this function to handle example clicks ---
+    const handleExampleClick = async (example: string) => {
+      query.value = example;
+      await findTaxId();
+    };
+
     return {
       emoji,
       taxId,
@@ -306,6 +312,7 @@ export default defineComponent({
       highlightPrev,
       selectHighlighted,
       highlightedIndex,
+      handleExampleClick,
     };
   },
 });
@@ -321,6 +328,25 @@ export default defineComponent({
 
   <section class="section">
     <div class="container">
+      <!-- Example Taxa Buttons -->
+      <div class="example-taxa-buttons" style="margin-bottom: 1em;">
+        <span style="margin-right: 0.5em; font-weight: bold;">Examples:</span>
+        <button
+          v-for="example in [
+            'Wuhan seafood market pneumonia virus',
+            'Bacteroides dorei',
+            'Lactobacillus reuteri',
+            '[Candida] auris'
+          ]"
+          :key="example"
+          class="button is-small is-info"
+          style="margin-right: 0.5em; margin-bottom: 0.5em;"
+          @click="() => handleExampleClick(example)"
+        >
+          {{ example }}
+        </button>
+      </div>
+
       <div class="field">
         <div
           class="control is-expanded is-large"
