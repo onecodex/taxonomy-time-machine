@@ -65,4 +65,19 @@ body, html, input, textarea, select, button, code, pre, table, th, td {
   transition: background 0.2s;
 }
 
-/* Add more as needed */
+/* Current taxon summary with dark mode support */
+.current-taxon-summary {
+  font-size: 1.1em;
+  background: #f8f8f8;
+  border-radius: 6px;
+  padding: 1em;
+  border: 1px solid #e0e0e0;
+  color: #222;
+}
+@media (prefers-color-scheme: dark) {
+  .current-taxon-summary {
+    background: #23272e;
+    border: 1px solid #444b53;
+    color: #f3f3f3;
+  }
+}

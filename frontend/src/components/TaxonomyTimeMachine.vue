@@ -12,7 +12,7 @@ interface TaxonVersion {
 export default defineComponent({
   name: "SearchComponent",
   // see vite.config.ts
-  props: { 
+  props: {
     apiBase: {
       type: String,
       required: true,
@@ -32,6 +32,17 @@ export default defineComponent({
       const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are zero-based, so add 1
       const day = String(date.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
+    };
+
+    // --- Format date for display in summary text ---
+    const formatDisplayDate = (isoDate: string | null): string => {
+      if (!isoDate) return '';
+      const date = new Date(isoDate);
+      return date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
     };
 
     // ~~~~~~~~~~~~~~~~~~~
@@ -288,6 +299,31 @@ export default defineComponent({
       await findTaxId();
     };
 
+    // --- Fetch the current taxon for the given taxId ---
+    const currentTaxon = ref<TaxonVersion | null>(null);
+
+    const fetchCurrentTaxon = async () => {
+      if (!taxId.value) {
+        currentTaxon.value = null;
+        return;
+      }
+      // Fetch without version to get the latest
+      const response = await fetch(
+        `${apiBase}/search?query=${encodeURIComponent(taxId.value)}`
+      );
+      if (!response.ok) {
+        currentTaxon.value = null;
+        return;
+      }
+      const data = await response.json();
+      currentTaxon.value = data && data.length > 0 ? data[0] : null;
+    };
+
+    // Watch taxId to update currentTaxon
+    watch(taxId, () => {
+      fetchCurrentTaxon();
+    });
+
     return {
       emoji,
       taxId,
@@ -302,6 +338,7 @@ export default defineComponent({
       updateVersion,
       setTaxId,
       formatDate,
+      formatDisplayDate,
       suggestions,
       loading,
       fetchSuggestions,
@@ -313,6 +350,7 @@ export default defineComponent({
       selectHighlighted,
       highlightedIndex,
       handleExampleClick,
+      currentTaxon,
     };
   },
 });
@@ -331,38 +369,23 @@ export default defineComponent({
       <!-- Example Taxa Buttons -->
       <div class="example-taxa-buttons" style="margin-bottom: 1em;">
         <span style="margin-right: 0.5em; font-weight: bold;">Examples:</span>
-        <button
-          v-for="example in [
-            'Wuhan seafood market pneumonia virus',
-            'Bacteroides dorei',
-            'Lactobacillus reuteri',
-            '[Candida] auris'
-          ]"
-          :key="example"
-          class="button is-small is-info"
-          style="margin-right: 0.5em; margin-bottom: 0.5em;"
-          @click="() => handleExampleClick(example)"
-        >
+        <button v-for="example in [
+          'Wuhan seafood market pneumonia virus',
+          'Bacteroides dorei',
+          'Lactobacillus reuteri',
+          '[Candida] auris'
+        ]" :key="example" class="button is-small is-info" style="margin-right: 0.5em; margin-bottom: 0.5em;"
+          @click="() => handleExampleClick(example)">
           {{ example }}
         </button>
       </div>
 
       <div class="field">
-        <div
-          class="control is-expanded is-large"
-          :class="{ 'is-loading': loading === true }"
-        >
+        <div class="control is-expanded is-large" :class="{ 'is-loading': loading === true }">
           <div class="search-component">
-            <input
-              class="input has-text-success is-primary is-large"
-              type="text"
-              v-model="query"
-              @input="onInput"
-              @keydown.down.prevent="highlightNext"
-              @keydown.up.prevent="highlightPrev"
-              @keydown.enter.prevent="selectHighlighted"
-              placeholder="Search for a name or tax ID..."
-            />
+            <input class="input has-text-success is-primary is-large" type="text" v-model="query" @input="onInput"
+              @keydown.down.prevent="highlightNext" @keydown.up.prevent="highlightPrev"
+              @keydown.enter.prevent="selectHighlighted" placeholder="Search for a name or tax ID..." />
           </div>
 
           <!-- Suggestions Dropdown -->
@@ -373,14 +396,9 @@ export default defineComponent({
                 <div v-if="error" class="dropdown-item has-text-danger">
                   Error fetching suggestions
                 </div>
-                <a
-                  v-for="(suggestion, index) in suggestions"
-                  :key="index"
-                  class="dropdown-item is-large"
-                  :class="{ 'is-active': index === highlightedIndex }"
-                  @mousedown.prevent="selectSuggestion(suggestion)"
-                  @mouseover="highlightIndex(index)"
-                >
+                <a v-for="(suggestion, index) in suggestions" :key="index" class="dropdown-item is-large"
+                  :class="{ 'is-active': index === highlightedIndex }" @mousedown.prevent="selectSuggestion(suggestion)"
+                  @mouseover="highlightIndex(index)">
                   {{ suggestion.name }} ({{ suggestion.tax_id }})
                 </a>
               </div>
@@ -389,21 +407,26 @@ export default defineComponent({
         </div>
       </div>
 
-      <nav
-        class="breadcrumb is-centered has-succeeds-separator"
-        aria-label="breadcrumbs"
-      >
+      <nav class="breadcrumb is-centered has-succeeds-separator" aria-label="breadcrumbs">
         <ul>
-          <li
-            v-for="v in versions"
-            :class="{ 'is-active': v.version_date === version }"
-          >
+          <li v-for="v in versions" :class="{ 'is-active': v.version_date === version }">
             <a href="#" @click.prevent="updateVersion(v.version_date)">
               {{ formatDate(v.version_date) }}
             </a>
           </li>
         </ul>
       </nav>
+
+      <!-- Current Taxon Info (moved above columns for better visibility) -->
+      <div v-if="taxId && version && lineage.length && currentTaxon" style="margin-bottom: 2em; margin-top: 1em;">
+        <p class="current-taxon-summary">
+          Currently viewing the NCBI taxonomy for
+          <strong>{{ lineage[lineage.length - 1].name }}</strong>
+          ({{ taxId }}) from {{ formatDisplayDate(version) }}.<br />
+          The current name for this taxon is
+          <strong>{{ currentTaxon.name }}</strong>.
+        </p>
+      </div>
 
       <div class="columns">
         <!-- Lineage table -->
@@ -427,27 +450,6 @@ export default defineComponent({
                 </td>
               </tr>
             </table>
-            <p>
-              Showing lineage of Tax ID <code>{{ taxId }}</code> from
-              <code>{{ version }}</code> retrieved from
-              <span v-if="version">
-                <span style="font-size:0.95em;word-break:break-all;">
-                  <code>
-                    {{
-                      `https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip`
-                    }}
-                  </code>
-                  <a
-                    :href="`https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip`"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style="margin-left: 0.5em; font-size: 0.95em;"
-                  >
-                    [download]
-                  </a>
-                </span>
-              </span>
-            </p>
           </div>
         </div>
 
@@ -475,6 +477,17 @@ export default defineComponent({
             </table>
           </div>
         </div>
+      </div>
+
+      <div v-if="version">
+        <p class="current-taxon-summary">
+          Data retrieved from
+          <code>{{ `https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip` }}</code>
+          <a :href="`https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip`"
+            target="_blank" rel="noopener noreferrer" style="margin-left: 0.5em; font-size: 0.95em;">
+            [download]
+          </a>
+        </p>
       </div>
     </div>
   </section>
