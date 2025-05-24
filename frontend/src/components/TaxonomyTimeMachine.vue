@@ -440,9 +440,3 @@ export default defineComponent({
 
   <!-- Results -->
 </template>
-
-<style scoped>
-.read-the-docs {
-  color: #888;
-}
-</style>
