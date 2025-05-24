@@ -403,7 +403,24 @@ export default defineComponent({
             </table>
             <p>
               Showing lineage of Tax ID <code>{{ taxId }}</code> from
-              <code>{{ version }}</code>
+              <code>{{ version }}</code> retrieved from
+              <span v-if="version">
+                <span style="font-size:0.95em;word-break:break-all;">
+                  <code>
+                    {{
+                      `https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip`
+                    }}
+                  </code>
+                  <a
+                    :href="`https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style="margin-left: 0.5em; font-size: 0.95em;"
+                  >
+                    [download]
+                  </a>
+                </span>
+              </span>
             </p>
           </div>
         </div>
