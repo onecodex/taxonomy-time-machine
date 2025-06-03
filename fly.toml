@@ -23,6 +23,6 @@ console_command = "service nginx start && python /app/backend/app.py"
   processes = ['app']
 
 [[vm]]
-  memory = '2gb'
-  cpu_kind = 'performance'
+  memory = '512mb'
+  cpu_kind = 'shared'
   cpus = 1
