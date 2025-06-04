@@ -287,7 +287,6 @@ class Taxonomy:
         return rows
 
     def get_all_events_recursive(self, tax_id: str) -> list[Event]:
-        import time
         _profile_start = time.perf_counter()
         result = _get_all_events_recursive(db=self, tax_id=tax_id)
         self._profile("get_all_events_recursive", _profile_start, time.perf_counter())
@@ -297,7 +296,6 @@ class Taxonomy:
     def get_versions(self, tax_id: str) -> list[datetime]:
         """Get the collapsed list of dates at which a taxon's lineage
         changed"""
-        import time
         _profile_start = time.perf_counter()
 
         # TODO: handle deletions (example: 352463)
@@ -335,7 +333,6 @@ class Taxonomy:
         Given a tax_id: return the taxonomy lineage. If `as_of` is specified,
         return the taxonomy lineage as of that date.
         """
-        import time
         _profile_start = time.perf_counter()
 
         lineage = []
