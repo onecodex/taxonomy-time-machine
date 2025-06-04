@@ -6,6 +6,12 @@ from functools import lru_cache
 from dataclasses import dataclass
 from enum import Enum
 
+import time
+import logging
+
+# Set logging level to INFO so profiling messages are visible
+logging.basicConfig(level=logging.INFO)
+
 
 class EventName(Enum):
     Create = "create"
@@ -92,47 +98,40 @@ class Taxonomy:
         self.conn.row_factory = sqlite3.Row  # return Row instead of tuple
         self.cursor = self.conn.cursor()
 
+    def _profile(self, func_name: str, start: float, end: float):
+        elapsed = (end - start) * 1000  # ms
+        logging.info(f"[PROFILE] {func_name} took {elapsed:.2f} ms")
 
     @lru_cache(maxsize=128)
     def search_names(self, query: str, limit: int | None = 10) -> list[Event]:
+        _profile_start = time.perf_counter()
         matches: list[dict] = []
         exact_matches: list[dict] = []
 
         # first, check if the query is tax-ID like
         if query.isnumeric():
+            _q1_start = time.perf_counter()
             rows = self.cursor.execute(
-                "SELECT * FROM taxonomy WHERE tax_id = ? ORDER BY version_date desc LIMIT 1",
+                """SELECT *
+                FROM taxonomy
+                WHERE tax_id = ?
+                ORDER BY version_date desc
+                LIMIT 1""",
                 (query,),
             ).fetchall()
+            _q1_end = time.perf_counter()
+            self._profile("search_names:taxid_query", _q1_start, _q1_end)
 
             exact_matches.extend([dict(r) for r in rows])
 
         if limit is None or (len(matches) + len(exact_matches) < limit):
-            # first look for exact mathes (case insensitive)
-            # LIKE is too slow...
-            matches.extend(
-                [
-                    dict(r)
-                    for r in self.cursor.execute(
-                        """SELECT *
-                        FROM taxonomy
-                        WHERE name LIKE ?
-                        ORDER BY LENGTH(name) ASC
-                        LIMIT ?;
-                        """,
-                        (f"{query}%", 10),
-                    ).fetchall()
-                ]
-            )
-
-        if limit is None or (len(matches) + len(exact_matches)) < limit:
-            # fuzzy matches
-            matches.extend(
-                [
-                    dict(r)
-                    for r in self.cursor.execute(
-                        """
-                    SELECT taxonomy.tax_id, taxonomy.name, taxonomy.rank, taxonomy.event_name, taxonomy.version_date
+            # Use FTS for prefix matches instead of slow LIKE query
+            _q2_start = time.perf_counter()
+            prefix_rows = [
+                dict(r)
+                for r in self.cursor.execute(
+                    """
+                    SELECT *
                     FROM name_fts
                     JOIN taxonomy ON name_fts.name = taxonomy.name
                     WHERE name_fts MATCH ?
@@ -140,10 +139,34 @@ class Taxonomy:
                     LIMIT ?
                     ;
                     """,
-                        (f'"{query}"', 10),
-                    ).fetchall()
-                ]
-            )
+                    (f"{query}*", 10),
+                ).fetchall()
+            ]
+            _q2_end = time.perf_counter()
+            self._profile("search_names:prefix_query", _q2_start, _q2_end)
+            matches.extend(prefix_rows)
+
+        if limit is None or (len(matches) + len(exact_matches)) < limit:
+            # fuzzy matches
+            _q3_start = time.perf_counter()
+            fuzzy_rows = [
+                dict(r)
+                for r in self.cursor.execute(
+                    """
+                SELECT taxonomy.tax_id, taxonomy.name, taxonomy.rank, taxonomy.event_name, taxonomy.version_date
+                FROM name_fts
+                JOIN taxonomy ON name_fts.name = taxonomy.name
+                WHERE name_fts MATCH ?
+                ORDER BY LENGTH(taxonomy.name) ASC
+                LIMIT ?
+                ;
+                """,
+                    (f'"{query}"', 10),
+                ).fetchall()
+            ]
+            _q3_end = time.perf_counter()
+            self._profile("search_names:fuzzy_query", _q3_start, _q3_end)
+            matches.extend(fuzzy_rows)
 
         # sort by closest match (probably the shortest)
         matches = sorted(matches, key=lambda m: len(m["name"]))
@@ -166,6 +189,7 @@ class Taxonomy:
         # + truncate to limit
         events = events[:limit]
 
+        self._profile("search_names", _profile_start, time.perf_counter())
         return events
 
 
@@ -178,6 +202,7 @@ class Taxonomy:
     ) -> list[Event]:
         """Get all events for a given tax_id or parent_id depending on
         query_key (default='tax_id')"""
+        _profile_start = time.perf_counter()
 
         if query_key == "tax_id":
             self.cursor.execute("SELECT * FROM taxonomy WHERE tax_id = ?;", (tax_id,))
@@ -191,12 +216,16 @@ class Taxonomy:
         if as_of:
             rows = [r for r in rows if r.version_date <= as_of]
 
-        return sorted(rows, key=lambda r: r.version_date)
+        result = sorted(rows, key=lambda r: r.version_date)
+        self._profile("get_events", _profile_start, time.perf_counter())
+        return result
 
 
     @lru_cache(maxsize=256)
     def get_children(self, tax_id: str, as_of: datetime | None = None):
         """Get all children of a node at a given version"""
+
+        _profile_start = time.perf_counter()
 
         # 1. find all? rows where parent_id=query_tax_id using their tax_ids
         # ....
@@ -254,15 +283,22 @@ class Taxonomy:
         # remove anything that got deleted
         rows = [r for r in rows if r.event_name is not EventName.Delete]
 
+        self._profile("get_children", _profile_start, time.perf_counter())
         return rows
 
     def get_all_events_recursive(self, tax_id: str) -> list[Event]:
-        return _get_all_events_recursive(db=self, tax_id=tax_id)
+        import time
+        _profile_start = time.perf_counter()
+        result = _get_all_events_recursive(db=self, tax_id=tax_id)
+        self._profile("get_all_events_recursive", _profile_start, time.perf_counter())
+        return result
 
     @lru_cache(maxsize=256)
     def get_versions(self, tax_id: str) -> list[datetime]:
         """Get the collapsed list of dates at which a taxon's lineage
         changed"""
+        import time
+        _profile_start = time.perf_counter()
 
         # TODO: handle deletions (example: 352463)
 
@@ -289,6 +325,7 @@ class Taxonomy:
                 versions_with_changes.append(version_date)
             seen_lineages.add(key)
 
+        self._profile("get_versions", _profile_start, time.perf_counter())
         return versions_with_changes
 
 
@@ -298,6 +335,8 @@ class Taxonomy:
         Given a tax_id: return the taxonomy lineage. If `as_of` is specified,
         return the taxonomy lineage as of that date.
         """
+        import time
+        _profile_start = time.perf_counter()
 
         lineage = []
 
@@ -321,4 +360,5 @@ class Taxonomy:
 
             tax_id = parent.parent_id
 
+        self._profile("get_lineage", _profile_start, time.perf_counter())
         return lineage
