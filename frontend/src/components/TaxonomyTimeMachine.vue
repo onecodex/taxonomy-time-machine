@@ -1,5 +1,6 @@
 <script lang="ts">
 import { defineComponent, ref, watch, computed } from "vue";
+import { apiFetchWithCache } from "../utils/apiCache";
 
 interface TaxonVersion {
   tax_id: string;
@@ -115,12 +116,8 @@ export default defineComponent({
       error.value = null;
 
       try {
-        const response = await fetch(
-          `${apiBase}/search?query=${encodeURIComponent(query.value || '')}`,
-        );
-        if (!response.ok) throw new Error(`API error: ${response.statusText}`);
-
-        const data = await response.json();
+        const url = `${apiBase}/search?query=${encodeURIComponent(query.value || '')}`;
+        const data = await apiFetchWithCache(url);
         suggestions.value = data;
       } catch (err) {
         console.error(err);
@@ -180,15 +177,8 @@ export default defineComponent({
         return;
       }
 
-      const response = await fetch(
-        `${apiBase}/search?query=${encodeURIComponent(query.value || '')}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("API request failed");
-      }
-
-      const data = await response.json();
+      const url = `${apiBase}/search?query=${encodeURIComponent(query.value || '')}`;
+      const data = await apiFetchWithCache(url);
 
       if (data.length == 0) {
         taxId.value = null;
@@ -205,15 +195,8 @@ export default defineComponent({
         return;
       }
 
-      const response = await fetch(
-        `${apiBase}/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("API request failed");
-      }
-
-      const data = await response.json();
+      const url = `${apiBase}/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`;
+      const data = await apiFetchWithCache(url);
       children.value = data || [];
     };
 
@@ -225,15 +208,8 @@ export default defineComponent({
         return;
       }
 
-      const response = await fetch(
-        `${apiBase}/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("API request failed");
-      }
-
-      const data = await response.json();
+      const url = `${apiBase}/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`;
+      const data = await apiFetchWithCache(url);
 
       lineage.value = data || [];
 
@@ -274,14 +250,8 @@ export default defineComponent({
         return;
       }
 
-      const response = await fetch(
-        `${apiBase}/versions?tax_id=${encodeURIComponent(taxId.value)}`,
-      );
-      if (!response.ok) {
-        throw new Error("API request failed");
-      }
-
-      const data = await response.json();
+      const url = `${apiBase}/versions?tax_id=${encodeURIComponent(taxId.value)}`;
+      const data = await apiFetchWithCache(url);
       versions.value = data || [];
     };
 
@@ -308,14 +278,8 @@ export default defineComponent({
         return;
       }
       // Fetch without version to get the latest
-      const response = await fetch(
-        `${apiBase}/search?query=${encodeURIComponent(taxId.value)}`
-      );
-      if (!response.ok) {
-        currentTaxon.value = null;
-        return;
-      }
-      const data = await response.json();
+      const url = `${apiBase}/search?query=${encodeURIComponent(taxId.value)}`;
+      const data = await apiFetchWithCache(url);
       currentTaxon.value = data && data.length > 0 ? data[0] : null;
     };
 
