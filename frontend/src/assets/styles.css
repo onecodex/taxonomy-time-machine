@@ -58,7 +58,7 @@ body, html, input, textarea, select, button, code, pre, table, th, td {
 
 /* Fix left-most breadcrumb item padding */
 .breadcrumb li:first-child a {
-  padding-left: 0.6em;
+  padding-left: 0.6em !important;
 }
 
 .breadcrumb li.is-active a {
