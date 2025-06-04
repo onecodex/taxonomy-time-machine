@@ -102,6 +102,25 @@ class Taxonomy:
         elapsed = (end - start) * 1000  # ms
         logging.info(f"[PROFILE] {func_name} took {elapsed:.2f} ms")
 
+    def _escape_fts_phrase(self, text: str) -> str:
+        """Escape text for use in FTS5 phrase queries by doubling quotes and wrapping in quotes"""
+        # Escape internal quotes by doubling them (FTS5 standard)
+        escaped = text.replace('"', '""')
+        # Wrap in quotes to make it a phrase query
+        return f'"{escaped}"'
+
+    def _safe_fts_query(self, sql: str, params: tuple):
+        """Execute FTS query with fallback to empty results on syntax errors"""
+        try:
+            return self.cursor.execute(sql, params).fetchall()
+        except sqlite3.OperationalError as e:
+            if "fts5: syntax error" in str(e).lower():
+                logging.warning(f"FTS syntax error with query: {params}, falling back to empty results")
+                return []
+            else:
+                # Re-raise other operational errors
+                raise
+
     @lru_cache(maxsize=128)
     def search_names(self, query: str, limit: int | None = 10) -> list[Event]:
         _profile_start = time.perf_counter()
@@ -129,7 +148,7 @@ class Taxonomy:
             _q2_start = time.perf_counter()
             prefix_rows = [
                 dict(r)
-                for r in self.cursor.execute(
+                for r in self._safe_fts_query(
                     """
                     SELECT *
                     FROM name_fts
@@ -139,8 +158,8 @@ class Taxonomy:
                     LIMIT ?
                     ;
                     """,
-                    (f"{query}*", 10),
-                ).fetchall()
+                    (f"{self._escape_fts_phrase(query)}*", 10),
+                )
             ]
             _q2_end = time.perf_counter()
             self._profile("search_names:prefix_query", _q2_start, _q2_end)
@@ -151,18 +170,18 @@ class Taxonomy:
             _q3_start = time.perf_counter()
             fuzzy_rows = [
                 dict(r)
-                for r in self.cursor.execute(
+                for r in self._safe_fts_query(
                     """
-                SELECT taxonomy.tax_id, taxonomy.name, taxonomy.rank, taxonomy.event_name, taxonomy.version_date
-                FROM name_fts
-                JOIN taxonomy ON name_fts.name = taxonomy.name
-                WHERE name_fts MATCH ?
-                ORDER BY LENGTH(taxonomy.name) ASC
-                LIMIT ?
-                ;
-                """,
-                    (f'"{query}"', 10),
-                ).fetchall()
+                    SELECT taxonomy.tax_id, taxonomy.name, taxonomy.rank, taxonomy.event_name, taxonomy.version_date
+                    FROM name_fts
+                    JOIN taxonomy ON name_fts.name = taxonomy.name
+                    WHERE name_fts MATCH ?
+                    ORDER BY LENGTH(taxonomy.name) ASC
+                    LIMIT ?
+                    ;
+                    """,
+                    (self._escape_fts_phrase(query), 10),
+                )
             ]
             _q3_end = time.perf_counter()
             self._profile("search_names:fuzzy_query", _q3_start, _q3_end)
