@@ -361,6 +361,10 @@ export default defineComponent({
               @keydown.up.prevent="highlightPrev"
               @keydown.enter.prevent="selectHighlighted"
               placeholder="Search for a name or tax ID..."
+              spellcheck="false"
+              autocorrect="off"
+              autocomplete="off"
+              autocapitalize="off"
             />
           </div>
 
