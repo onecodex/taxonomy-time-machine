@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, ref, watch, computed } from "vue";
+import { defineComponent, ref, watch, computed, onMounted } from "vue";
 import { apiFetchWithCache } from "../utils/apiCache";
 
 interface TaxonVersion {
@@ -52,7 +52,11 @@ export default defineComponent({
     // query parameters
     const taxId = ref<string | null>("");
     const version = ref<string | null>("");
-    const query = ref<string | null>("");
+    // The input box value, always shows the current taxon's name if available
+    const query = ref<string>("");
+
+    // Track if the user is actively typing (to avoid overwriting input)
+    const userIsTyping = ref(false);
 
     // results
     const versions = ref<TaxonVersion[]>([]);
@@ -80,6 +84,52 @@ export default defineComponent({
       error.value = null;
     });
 
+    // --- URL Sync Helpers ---
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        tax_id: params.get("tax_id"),
+        version: params.get("version"),
+      };
+    }
+
+    function setQueryParams(tax_id: string | null, version: string | null) {
+      const params = new URLSearchParams(window.location.search);
+      if (tax_id) {
+        params.set("tax_id", tax_id);
+      } else {
+        params.delete("tax_id");
+      }
+      if (version) {
+        params.set("version", version);
+      } else {
+        params.delete("version");
+      }
+      const newUrl =
+        window.location.pathname +
+        (params.toString() ? "?" + params.toString() : "");
+      window.history.replaceState({}, "", newUrl);
+    }
+
+    // --- Initialize from URL on mount ---
+    onMounted(() => {
+      const { tax_id, version: v } = getQueryParams();
+      if (tax_id) taxId.value = tax_id;
+      if (v) version.value = v;
+    });
+
+    // --- Listen for browser navigation (back/forward) ---
+    window.addEventListener("popstate", () => {
+      const { tax_id, version: v } = getQueryParams();
+      taxId.value = tax_id || "";
+      version.value = v || "";
+    });
+
+    // --- Sync to URL when taxId or version changes ---
+    watch([taxId, version], ([newTaxId, newVersion]) => {
+      setQueryParams(newTaxId, newVersion);
+    });
+
     watch(taxId, () => {
       fetchLineage();
       fetchVersions();
@@ -94,6 +144,7 @@ export default defineComponent({
 
     // Input handler with debounce
     const onInput = () => {
+      userIsTyping.value = true;
       if (debounceTimeout) clearTimeout(debounceTimeout);
       debounceTimeout = setTimeout(() => {
         fetchSuggestions();
@@ -126,10 +177,11 @@ export default defineComponent({
 
     // Manage selection
     const selectSuggestion = (suggestion: TaxonVersion) => {
-      query.value = suggestion.name; // Use the `name` field
+      query.value = suggestion.name || ""; // Use the `name` field
       taxId.value = suggestion.tax_id; // Update `taxId` from selected suggestion
       version.value = suggestion.version_date; // Update version if available
       suggestions.value = []; // Clear suggestions
+      userIsTyping.value = false;
     };
 
     // Navigation with keyboard
@@ -283,6 +335,18 @@ export default defineComponent({
     // Watch taxId to update currentTaxon
     watch(taxId, () => {
       fetchCurrentTaxon();
+    });
+
+    // --- Keep input box in sync with currentTaxon unless user is typing ---
+    watch(currentTaxon, (newTaxon) => {
+      if (newTaxon && !userIsTyping.value) {
+        query.value = newTaxon.name || newTaxon.tax_id || "";
+      }
+    });
+
+    // When taxId changes due to URL or navigation, reset userIsTyping so input box updates
+    watch([taxId, version], () => {
+      userIsTyping.value = false;
     });
 
     return {
