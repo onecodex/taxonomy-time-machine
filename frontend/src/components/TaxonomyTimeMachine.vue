@@ -17,15 +17,14 @@ export default defineComponent({
     apiBase: {
       type: String,
       required: true,
-    }
+    },
   },
   setup(props) {
-
     const apiBase = props.apiBase || `${window.location.origin}/api`;
 
     const formatDate = (isoDate: string | null): string => {
       if (isoDate === null) {
-        return '';
+        return "";
       }
 
       const date = new Date(isoDate);
@@ -37,12 +36,12 @@ export default defineComponent({
 
     // --- Format date for display in summary text ---
     const formatDisplayDate = (isoDate: string | null): string => {
-      if (!isoDate) return '';
+      if (!isoDate) return "";
       const date = new Date(isoDate);
       return date.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     };
 
@@ -74,9 +73,7 @@ export default defineComponent({
     let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const isNumeric = (value: null | string | number) =>
-      value !== null &&
-      value !== "" &&
-      !isNaN(Number(value));
+      value !== null && value !== "" && !isNaN(Number(value));
 
     // Watcher to reset error state on query change
     watch(query, () => {
@@ -100,12 +97,12 @@ export default defineComponent({
       if (debounceTimeout) clearTimeout(debounceTimeout);
       debounceTimeout = setTimeout(() => {
         fetchSuggestions();
-      }, 300);
+      }, 150);
     };
 
     // Fetch suggestions dynamically
     const fetchSuggestions = async () => {
-      if (!(query.value || '').trim()) {
+      if (!(query.value || "").trim()) {
         suggestions.value = [];
         version.value = null;
         taxId.value = null;
@@ -116,7 +113,7 @@ export default defineComponent({
       error.value = null;
 
       try {
-        const url = `${apiBase}/search?query=${encodeURIComponent(query.value || '')}`;
+        const url = `${apiBase}/search?query=${encodeURIComponent(query.value || "")}`;
         const data = await apiFetchWithCache(url);
         suggestions.value = data;
       } catch (err) {
@@ -177,7 +174,7 @@ export default defineComponent({
         return;
       }
 
-      const url = `${apiBase}/search?query=${encodeURIComponent(query.value || '')}`;
+      const url = `${apiBase}/search?query=${encodeURIComponent(query.value || "")}`;
       const data = await apiFetchWithCache(url);
 
       if (data.length == 0) {
@@ -195,7 +192,7 @@ export default defineComponent({
         return;
       }
 
-      const url = `${apiBase}/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`;
+      const url = `${apiBase}/children?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || "")}`;
       const data = await apiFetchWithCache(url);
       children.value = data || [];
     };
@@ -208,7 +205,7 @@ export default defineComponent({
         return;
       }
 
-      const url = `${apiBase}/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || '')}`;
+      const url = `${apiBase}/lineage?tax_id=${encodeURIComponent(taxId.value)}&version_date=${encodeURIComponent(version.value || "")}`;
       const data = await apiFetchWithCache(url);
 
       lineage.value = data || [];
@@ -331,25 +328,40 @@ export default defineComponent({
   <section class="section">
     <div class="container">
       <!-- Example Taxa Buttons -->
-      <div class="example-taxa-buttons" style="margin-bottom: 1em;">
-        <span style="margin-right: 0.5em; font-weight: bold;">Examples:</span>
-        <button v-for="example in [
-          'Wuhan seafood market pneumonia virus',
-          'Bacteroides dorei',
-          'Lactobacillus reuteri',
-          '[Candida] auris'
-        ]" :key="example" class="button is-small is-info" style="margin-right: 0.5em; margin-bottom: 0.5em;"
-          @click="() => handleExampleClick(example)">
+      <div class="example-taxa-buttons" style="margin-bottom: 1em">
+        <span style="margin-right: 0.5em; font-weight: bold">Examples:</span>
+        <button
+          v-for="example in [
+            'Wuhan seafood market pneumonia virus',
+            'Bacteroides dorei',
+            'Lactobacillus reuteri',
+            '[Candida] auris',
+          ]"
+          :key="example"
+          class="button is-small is-info"
+          style="margin-right: 0.5em; margin-bottom: 0.5em"
+          @click="() => handleExampleClick(example)"
+        >
           {{ example }}
         </button>
       </div>
 
       <div class="field">
-        <div class="control is-expanded is-large" :class="{ 'is-loading': loading === true }">
+        <div
+          class="control is-expanded is-large"
+          :class="{ 'is-loading': loading === true }"
+        >
           <div class="search-component">
-            <input class="input has-text-success is-primary is-large" type="text" v-model="query" @input="onInput"
-              @keydown.down.prevent="highlightNext" @keydown.up.prevent="highlightPrev"
-              @keydown.enter.prevent="selectHighlighted" placeholder="Search for a name or tax ID..." />
+            <input
+              class="input has-text-success is-primary is-large"
+              type="text"
+              v-model="query"
+              @input="onInput"
+              @keydown.down.prevent="highlightNext"
+              @keydown.up.prevent="highlightPrev"
+              @keydown.enter.prevent="selectHighlighted"
+              placeholder="Search for a name or tax ID..."
+            />
           </div>
 
           <!-- Suggestions Dropdown -->
@@ -360,9 +372,14 @@ export default defineComponent({
                 <div v-if="error" class="dropdown-item has-text-danger">
                   Error fetching suggestions
                 </div>
-                <a v-for="(suggestion, index) in suggestions" :key="index" class="dropdown-item is-large"
-                  :class="{ 'is-active': index === highlightedIndex }" @mousedown.prevent="selectSuggestion(suggestion)"
-                  @mouseover="highlightIndex(index)">
+                <a
+                  v-for="(suggestion, index) in suggestions"
+                  :key="index"
+                  class="dropdown-item is-large"
+                  :class="{ 'is-active': index === highlightedIndex }"
+                  @mousedown.prevent="selectSuggestion(suggestion)"
+                  @mouseover="highlightIndex(index)"
+                >
                   {{ suggestion.name }} ({{ suggestion.tax_id }})
                 </a>
               </div>
@@ -371,9 +388,15 @@ export default defineComponent({
         </div>
       </div>
 
-      <nav class="breadcrumb is-centered has-succeeds-separator" aria-label="breadcrumbs">
+      <nav
+        class="breadcrumb is-centered has-succeeds-separator"
+        aria-label="breadcrumbs"
+      >
         <ul>
-          <li v-for="v in versions" :class="{ 'is-active': v.version_date === version }">
+          <li
+            v-for="v in versions"
+            :class="{ 'is-active': v.version_date === version }"
+          >
             <a href="#" @click.prevent="updateVersion(v.version_date)">
               {{ formatDate(v.version_date) }}
             </a>
@@ -382,13 +405,17 @@ export default defineComponent({
       </nav>
 
       <!-- Current Taxon Info (moved above columns for better visibility) -->
-      <div v-if="taxId && version && lineage.length && currentTaxon" style="margin-bottom: 2em; margin-top: 1em;">
+      <div
+        v-if="taxId && version && lineage.length && currentTaxon"
+        style="margin-bottom: 2em; margin-top: 1em"
+      >
         <p class="current-taxon-summary">
           Currently viewing the NCBI taxonomy for
           <strong>{{ lineage[lineage.length - 1].name }}</strong>
           ({{ taxId }}) from {{ formatDisplayDate(version) }}.<br />
           The current name for this taxon is
-          <strong>{{ currentTaxon.name }}</strong>.
+          <strong>{{ currentTaxon.name }}</strong
+          >.
         </p>
       </div>
 
@@ -446,9 +473,15 @@ export default defineComponent({
       <div v-if="version">
         <p class="current-taxon-summary">
           Data retrieved from
-          <code>{{ `https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip` }}</code>
-          <a :href="`https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip`"
-            target="_blank" rel="noopener noreferrer" style="margin-left: 0.5em; font-size: 0.95em;">
+          <code>{{
+            `https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip`
+          }}</code>
+          <a
+            :href="`https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip`"
+            target="_blank"
+            rel="noopener noreferrer"
+            style="margin-left: 0.5em; font-size: 0.95em"
+          >
             [download]
           </a>
         </p>
