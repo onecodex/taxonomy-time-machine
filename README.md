@@ -10,7 +10,7 @@ versions of the NCBI taxonomy database.
 - **Interactive Documentation**
   - Swagger UI (with API console): [/swagger-ui](https://taxonomy.onecodex.com/swagger-ui)
   - ReDoc (readable format): [/redoc](https://taxonomy.onecodex.com/redoc)
-- **OpenAPI Specification**: [/openapi](https://taxonomy.onecodex.com/openapi)
+- **OpenAPI Specification**: [/openapi.json](https://taxonomy.onecodex.com/openapi.json)
 
 :paperclip: [preprint](https://www.biorxiv.org/content/10.1101/2024.12.11.627987v1)
 
