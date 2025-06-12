@@ -1,5 +1,6 @@
 <script lang="ts">
 import { defineComponent, ref, watch, computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { apiFetchWithCache } from "../utils/apiCache";
 
 interface TaxonVersion {
@@ -20,6 +21,8 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const route = useRoute();
+    const router = useRouter();
     const apiBase = props.apiBase || `${window.location.origin}/api`;
 
     const formatDate = (isoDate: string | null): string => {
@@ -84,50 +87,58 @@ export default defineComponent({
       error.value = null;
     });
 
-    // --- URL Sync Helpers ---
-    function getQueryParams() {
-      const params = new URLSearchParams(window.location.search);
-      return {
-        tax_id: params.get("tax_id"),
-        version: params.get("version"),
-      };
-    }
-
-    function setQueryParams(tax_id: string | null, version: string | null) {
-      const params = new URLSearchParams(window.location.search);
-      if (tax_id) {
-        params.set("tax_id", tax_id);
-      } else {
-        params.delete("tax_id");
+    // --- URL Navigation Helpers ---
+    const navigateToTaxon = (
+      tax_id: string | null,
+      version_date: string | null = null,
+    ) => {
+      if (!tax_id) {
+        router.push("/");
+        return;
       }
-      if (version) {
-        params.set("version", version);
-      } else {
-        params.delete("version");
-      }
-      const newUrl =
-        window.location.pathname +
-        (params.toString() ? "?" + params.toString() : "");
-      window.history.replaceState({}, "", newUrl);
-    }
 
-    // --- Initialize from URL on mount ---
+      if (version_date) {
+        // Format version date for URL (remove time and special characters)
+        const dateOnly = version_date.split("T")[0];
+        router.push(`/taxon/${tax_id}/${dateOnly}`);
+      } else {
+        router.push(`/taxon/${tax_id}`);
+      }
+    };
+
+    // --- Initialize from route parameters on mount ---
     onMounted(() => {
-      const { tax_id, version: v } = getQueryParams();
-      if (tax_id) taxId.value = tax_id;
-      if (v) version.value = v;
+      if (route.params.taxId) {
+        taxId.value = route.params.taxId as string;
+      }
+      if (route.params.version) {
+        // Convert date back to full ISO format for API calls
+        const versionParam = route.params.version as string;
+        if (versionParam.includes("-") && !versionParam.includes("T")) {
+          version.value = versionParam + "T00:00:00";
+        } else {
+          version.value = versionParam;
+        }
+      }
     });
 
-    // --- Listen for browser navigation (back/forward) ---
-    window.addEventListener("popstate", () => {
-      const { tax_id, version: v } = getQueryParams();
-      taxId.value = tax_id || "";
-      version.value = v || "";
-    });
-
-    // --- Sync to URL when taxId or version changes ---
-    watch([taxId, version], ([newTaxId, newVersion]) => {
-      setQueryParams(newTaxId, newVersion);
+    // --- Watch route changes ---
+    watch(route, (newRoute) => {
+      if (newRoute.params.taxId !== taxId.value) {
+        taxId.value = (newRoute.params.taxId as string) || "";
+      }
+      if (newRoute.params.version !== version.value) {
+        const versionParam = newRoute.params.version as string;
+        if (
+          versionParam &&
+          versionParam.includes("-") &&
+          !versionParam.includes("T")
+        ) {
+          version.value = versionParam + "T00:00:00";
+        } else {
+          version.value = versionParam || "";
+        }
+      }
     });
 
     watch(taxId, () => {
@@ -182,6 +193,7 @@ export default defineComponent({
       version.value = suggestion.version_date; // Update version if available
       suggestions.value = []; // Clear suggestions
       userIsTyping.value = false;
+      navigateToTaxon(suggestion.tax_id, suggestion.version_date);
     };
 
     // Navigation with keyboard
@@ -215,6 +227,7 @@ export default defineComponent({
       version.value = null;
       if (isNumeric(query.value)) {
         taxId.value = query.value;
+        navigateToTaxon(query.value);
       } else {
         findTaxId();
       }
@@ -223,6 +236,7 @@ export default defineComponent({
     const findTaxId = async () => {
       if (query.value == null || !query.value.toString().trim()) {
         taxId.value = null;
+        router.push("/");
         return;
       }
 
@@ -232,9 +246,11 @@ export default defineComponent({
       if (data.length == 0) {
         taxId.value = null;
         version.value = null;
+        router.push("/");
       } else {
         taxId.value = data[0]["tax_id"];
         version.value = data[0]["version_date"];
+        navigateToTaxon(data[0]["tax_id"], data[0]["version_date"]);
       }
     };
 
@@ -306,10 +322,12 @@ export default defineComponent({
 
     const updateTaxId = (argTaxId: string) => {
       taxId.value = argTaxId;
+      navigateToTaxon(argTaxId, version.value);
     };
 
     const updateVersion = (argVersion: string | null) => {
       version.value = argVersion;
+      navigateToTaxon(taxId.value, argVersion);
     };
 
     // --- Add this function to handle example clicks ---
