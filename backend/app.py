@@ -91,6 +91,7 @@ class Events(MethodView):
     @blp.arguments(TaxIdQuerySchema, location="query")
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
+        """Return all taxonomic events for a given tax ID"""
         db = get_taxonomy()
         tax_id = args["tax_id"]
         return db.get_events(tax_id=tax_id)
@@ -101,6 +102,7 @@ class Children(MethodView):
     @blp.arguments(ChildrenQuerySchema, location="query")
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
+        """Return direct descendants for a given tax ID at a specific time"""
         db = get_taxonomy()
         version = args.get("version_date")
         tax_id = args["tax_id"]
@@ -114,6 +116,7 @@ class Lineage(MethodView):
     @blp.arguments(ChildrenQuerySchema, location="query")
     @blp.response(200, TaxonSchema(many=True))
     def get(self, args):
+        """Return the complete taxonomic lineage for a given tax ID at a specific time"""
         db = get_taxonomy()
         tax_id = args["tax_id"]
         version = args.get("version_date")
@@ -142,6 +145,7 @@ class Versions(MethodView):
     @blp.arguments(ChildrenQuerySchema, location="query")
     @blp.response(200, VersionSchema(many=True))
     def get(self, args):
+        """Return all available database versions where the given tax ID appears"""
         db = Taxonomy(database_path=DATABASE_PATH)
         tax_id = args.get("tax_id")
         versions = db.get_versions(tax_id=tax_id)
