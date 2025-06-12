@@ -7,7 +7,7 @@ export default defineConfig(({ command }) => {
     define: {
       "import.meta.env.VITE_API_BASE":
         command === "serve"
-          ? JSON.stringify("http://localhost:5000")
+          ? JSON.stringify("http://localhost:9606")
           : JSON.stringify(null),
     },
     plugins: [vue()],
