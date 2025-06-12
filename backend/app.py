@@ -19,7 +19,7 @@ app.config["OPENAPI_REDOC_URL"] = "https://cdn.jsdelivr.net/npm/redoc@next/bundl
 
 if not os.environ.get("FLASK_DEBUG"):
     app.config["API_SPEC_OPTIONS"] = {
-        "servers": [{"url": "https://taxonomy.onecodex.com", "description": "Production server"}]
+        "servers": [{"url": "https://taxonomy.onecodex.com/api", "description": "Production server"}]
     }
 
 api = Api(app)
