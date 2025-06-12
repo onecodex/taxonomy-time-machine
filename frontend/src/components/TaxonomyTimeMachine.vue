@@ -337,13 +337,6 @@ export default defineComponent({
       fetchCurrentTaxon();
     });
 
-    // --- Keep input box in sync with currentTaxon unless user is typing ---
-    watch(currentTaxon, (newTaxon) => {
-      if (newTaxon && !userIsTyping.value) {
-        query.value = newTaxon.name || newTaxon.tax_id || "";
-      }
-    });
-
     // When taxId changes due to URL or navigation, reset userIsTyping so input box updates
     watch([taxId, version], () => {
       userIsTyping.value = false;
