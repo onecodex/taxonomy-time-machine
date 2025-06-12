@@ -5,6 +5,13 @@ https://taxonomy.onecodex.com
 A web application and database for quickly browsing and comparing different
 versions of the NCBI taxonomy database.
 
+## Documentation
+
+- **Interactive Documentation**
+  - Swagger UI (with API console): [/swagger-ui](https://taxonomy.onecodex.com/swagger-ui)
+  - ReDoc (readable format): [/redoc](https://taxonomy.onecodex.com/redoc)
+- **OpenAPI Specification**: [/openapi](https://taxonomy.onecodex.com/openapi)
+
 :paperclip: [preprint](https://www.biorxiv.org/content/10.1101/2024.12.11.627987v1)
 
 Please Cite:
@@ -54,6 +61,20 @@ npm run dev
 ```
 
 ## API Documentation
+
+The API provides the following endpoints:
+
+When running locally in development mode:
+```bash
+# Start the backend server
+cd backend/
+FLASK_DEBUG=true python app.py
+
+# Access documentation at:
+http://localhost:9606/openapi   # Raw OpenAPI spec
+http://localhost:9606/swagger-ui  # Swagger UI
+http://localhost:9606/redoc     # ReDoc interface
+```
 
 ### `api/lineage`
 

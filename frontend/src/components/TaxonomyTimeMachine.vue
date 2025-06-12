@@ -377,7 +377,25 @@ export default defineComponent({
 <template>
   <!-- Header -->
   <div class="container">
-    <p class="title">{{ emoji }} Taxonomy Time Machine</p>
+    <div
+      class="header-container"
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      "
+    >
+      <p class="title" style="margin: 0">{{ emoji }} Taxonomy Time Machine</p>
+      <div class="api-links" style="gap: 0.5rem; display: flex">
+        <a href="/swagger-ui" target="_blank" class="button is-small is-light"
+          >API Console</a
+        >
+        <a href="/redoc" target="_blank" class="button is-small is-light"
+          >API Docs</a
+        >
+      </div>
+    </div>
   </div>
 
   <!-- Search -->

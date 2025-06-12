@@ -12,6 +12,16 @@ app.config["API_TITLE"] = "Taxonomy Time Machine"
 app.config["API_VERSION"] = "v1"
 app.config["OPENAPI_VERSION"] = "3.0.2"
 app.config["OPENAPI_URL_PREFIX"] = "/"
+app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger-ui"
+app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
+app.config["OPENAPI_REDOC_PATH"] = "/redoc"
+app.config["OPENAPI_REDOC_URL"] = "https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"
+
+if not os.environ.get("FLASK_DEBUG"):
+    app.config["API_SPEC_OPTIONS"] = {
+        "servers": [{"url": "https://taxonomy.onecodex.com", "description": "Production server"}]
+    }
+
 api = Api(app)
 
 # TODO: we can cut down on the number of DB queries by fetching the events
@@ -29,16 +39,16 @@ def get_taxonomy():
 
 
 class QueryArgsSchema(ma.Schema):
-    query = ma.fields.String()
+    query = ma.fields.String(metadata={"description": "Search term (taxon name or ID)", "example": "Bacteroides dorei"})
 
 
 class TaxIdQuerySchema(ma.Schema):
-    tax_id = ma.fields.Integer()
+    tax_id = ma.fields.Integer(metadata={"description": "NCBI Taxonomy ID", "example": 9606})
 
 
 class ChildrenQuerySchema(ma.Schema):
-    tax_id = ma.fields.String()
-    version_date = ma.fields.NaiveDateTime(required=False, allow_none=True)
+    tax_id = ma.fields.String(metadata={"description": "NCBI Taxonomy ID", "example": "9606"})
+    version_date = ma.fields.NaiveDateTime(required=False, allow_none=True, metadata={"description": "ISO8601-formatted datetime (e.g. 2014-08-01T00:00:00)", "example": "2014-08-01T00:00:00"})
 
     @ma.pre_load
     def coerce_empty_to_none(self, data, **kwargs):
@@ -50,12 +60,12 @@ class ChildrenQuerySchema(ma.Schema):
 
 
 class TaxonSchema(ma.Schema):
-    event_name = ma.fields.String()
-    name = ma.fields.String()
-    rank = ma.fields.String()
-    tax_id = ma.fields.String()
-    parent_id = ma.fields.String(allow_none=True)
-    version_date = ma.fields.NaiveDateTime()
+    event_name = ma.fields.String(metadata={"description": "Type of taxonomic event", "example": "create"})
+    name = ma.fields.String(metadata={"description": "Scientific name", "example": "Homo sapiens"})
+    rank = ma.fields.String(metadata={"description": "Taxonomic rank", "example": "species"})
+    tax_id = ma.fields.String(metadata={"description": "NCBI Taxonomy ID", "example": "9606"})
+    parent_id = ma.fields.String(allow_none=True, metadata={"description": "Parent taxon ID", "example": "9605"})
+    version_date = ma.fields.NaiveDateTime(metadata={"description": "ISO8601-formatted datetime", "example": "2014-08-01T00:00:00"})
 
 
 class VersionSchema(ma.Schema):
