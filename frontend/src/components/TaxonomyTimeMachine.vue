@@ -395,17 +395,9 @@ export default defineComponent({
 <template>
   <!-- Header -->
   <div class="container">
-    <div
-      class="header-container"
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-      "
-    >
-      <p class="title" style="margin: 0">{{ emoji }} Taxonomy Time Machine</p>
-      <div class="documentation-links" style="gap: 0.5rem; display: flex">
+    <div class="header-container">
+      <h1 class="title responsive-title">{{ emoji }} Taxonomy Time Machine</h1>
+      <div class="documentation-links">
         <a
           href="https://github.com/onecodex/taxonomy-time-machine"
           target="_blank"
@@ -596,3 +588,68 @@ export default defineComponent({
 
   <!-- Results -->
 </template>
+
+<style scoped>
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.responsive-title {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.2;
+  flex: 1;
+  min-width: 0;
+}
+
+.documentation-links {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 768px) {
+  .header-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .responsive-title {
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .documentation-links {
+    justify-content: center;
+    align-self: center;
+  }
+
+  .documentation-links .button {
+    font-size: 0.75rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .responsive-title {
+    font-size: 1.25rem;
+  }
+
+  .documentation-links {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .documentation-links .button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
