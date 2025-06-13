@@ -421,6 +421,9 @@ export default defineComponent({
     <div class="header-container">
       <h1 class="title responsive-title">{{ emoji }} Taxonomy Time Machine</h1>
       <div class="documentation-links">
+        <router-link to="/bulk-resolver" class="button is-small is-info">
+          🔄 Bulk Resolver
+        </router-link>
         <a
           href="https://github.com/onecodex/taxonomy-time-machine"
           target="_blank"

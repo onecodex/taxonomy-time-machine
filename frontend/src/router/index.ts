@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 
-const TaxonomyTimeMachine = () => import("../components/TaxonomyTimeMachine.vue");
+const TaxonomyTimeMachine = () =>
+  import("../components/TaxonomyTimeMachine.vue");
+const BulkNameResolver = () => import("../components/BulkNameResolver.vue");
 
 const router = createRouter({
   history: createWebHistory(),
@@ -21,6 +23,11 @@ const router = createRouter({
       name: "taxon-version",
       component: TaxonomyTimeMachine,
       props: true,
+    },
+    {
+      path: "/bulk-resolver",
+      name: "bulk-resolver",
+      component: BulkNameResolver,
     },
   ],
 });
