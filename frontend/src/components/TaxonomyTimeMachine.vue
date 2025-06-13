@@ -405,12 +405,18 @@ export default defineComponent({
       "
     >
       <p class="title" style="margin: 0">{{ emoji }} Taxonomy Time Machine</p>
-      <div class="api-links" style="gap: 0.5rem; display: flex">
-        <a href="/swagger-ui" target="_blank" class="button is-small is-light"
-          >API Console</a
+      <div class="documentation-links" style="gap: 0.5rem; display: flex">
+        <a
+          href="https://github.com/onecodex/taxonomy-time-machine"
+          target="_blank"
+          class="button is-small"
+          >Source Code</a
         >
-        <a href="/redoc" target="_blank" class="button is-small is-light"
-          >API Docs</a
+        <a href="/swagger-ui" target="_blank" class="button is-small"
+          >API Docs (Swagger)</a
+        >
+        <a href="/redoc" target="_blank" class="button is-small"
+          >API Docs (Redoc)</a
         >
       </div>
     </div>
