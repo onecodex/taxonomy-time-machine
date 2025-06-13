@@ -11,5 +11,20 @@ export default defineConfig(({ command }) => {
           : JSON.stringify(null),
     },
     plugins: [vue()],
+    server: {
+      proxy: {
+        // Proxy API requests to the backend server (matches nginx config)
+        "/api/": {
+          target: "http://localhost:9606/",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\//, "/"),
+        },
+        // Proxy documentation endpoints without rewriting (matches nginx config)
+        "^/(openapi|openapi\\.json|swagger-ui|redoc)": {
+          target: "http://localhost:9606",
+          changeOrigin: true,
+        },
+      },
+    },
   };
 });

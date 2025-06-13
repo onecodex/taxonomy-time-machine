@@ -360,6 +360,28 @@ export default defineComponent({
       userIsTyping.value = false;
     });
 
+    // Function to get CSS class for rank badges
+    const getRankClass = (rank: string | null): string => {
+      if (!rank) return "rank-default";
+
+      const normalizedRank = rank.toLowerCase().trim();
+
+      const rankClassMap: Record<string, string> = {
+        superkingdom: "rank-superkingdom",
+        kingdom: "rank-kingdom",
+        phylum: "rank-phylum",
+        class: "rank-class",
+        order: "rank-order",
+        family: "rank-family",
+        genus: "rank-genus",
+        species: "rank-species",
+        subspecies: "rank-subspecies",
+        strain: "rank-strain",
+      };
+
+      return rankClassMap[normalizedRank] || "rank-default";
+    };
+
     return {
       emoji,
       taxId,
@@ -387,6 +409,7 @@ export default defineComponent({
       highlightedIndex,
       handleExampleClick,
       currentTaxon,
+      getRankClass,
     };
   },
 });
@@ -514,54 +537,73 @@ export default defineComponent({
         </p>
       </div>
 
-      <div class="columns">
-        <!-- Lineage table -->
-        <div class="column auto">
-          <div v-if="!!lineage.length">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Name</th>
-                  <th>Tax ID</th>
-                </tr>
-              </thead>
-              <tr v-for="node in lineage">
-                <td>{{ node.rank }}</td>
-                <td>{{ node.name }}</td>
+      <!-- Lineage table -->
+      <div v-if="!!lineage.length" class="taxonomy-section">
+        <h2 class="section-title">Taxonomic Lineage</h2>
+        <div class="table-container">
+          <table class="table is-fullwidth taxonomy-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Tax ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="node in lineage" :key="node.tax_id">
                 <td>
-                  <a href="#" @click.prevent="updateTaxId(node.tax_id)">
+                  <span class="rank-badge" :class="getRankClass(node.rank)">
+                    {{ node.rank }}
+                  </span>
+                </td>
+                <td class="name-cell">{{ node.name }}</td>
+                <td>
+                  <a
+                    href="#"
+                    @click.prevent="updateTaxId(node.tax_id)"
+                    class="tax-id-link"
+                  >
                     {{ node.tax_id }}
                   </a>
                 </td>
               </tr>
-            </table>
-          </div>
+            </tbody>
+          </table>
         </div>
+      </div>
 
-        <!-- Children table -->
-        <div class="column auto">
-          <div v-if="!!children.length">
-            <h2>Children (n={{ children.length }})</h2>
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Name</th>
-                  <th>Tax ID</th>
-                </tr>
-              </thead>
-              <tr v-for="node in children">
-                <td>{{ node.rank }}</td>
-                <td>{{ node.name }}</td>
+      <!-- Children table -->
+      <div v-if="!!children.length" class="taxonomy-section">
+        <h2 class="section-title">Children ({{ children.length }})</h2>
+        <div class="table-container">
+          <table class="table is-fullwidth taxonomy-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Tax ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="node in children" :key="node.tax_id">
                 <td>
-                  <a href="#" @click.prevent="updateTaxId(node.tax_id)">
+                  <span class="rank-badge" :class="getRankClass(node.rank)">
+                    {{ node.rank }}
+                  </span>
+                </td>
+                <td class="name-cell">{{ node.name }}</td>
+                <td>
+                  <a
+                    href="#"
+                    @click.prevent="updateTaxId(node.tax_id)"
+                    class="tax-id-link"
+                  >
                     {{ node.tax_id }}
                   </a>
                 </td>
               </tr>
-            </table>
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -650,6 +692,299 @@ export default defineComponent({
   .documentation-links .button {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* Taxonomy tables styling */
+.taxonomy-section {
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #363636;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+}
+
+.table-container {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.taxonomy-table {
+  margin-bottom: 0;
+  border-radius: 0;
+}
+
+.taxonomy-table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  padding: 1rem 0.75rem;
+}
+
+.taxonomy-table td {
+  padding: 0.875rem 0.75rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.taxonomy-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.name-cell {
+  font-weight: 500;
+}
+
+.tax-id-link {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.tax-id-link:hover {
+  background-color: #e7f3ff;
+  color: #0056b3;
+  text-decoration: none;
+}
+
+/* Rank badges */
+.rank-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid;
+  min-width: 70px;
+  text-align: center;
+}
+
+.rank-superkingdom {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border-color: #90caf9;
+}
+
+.rank-kingdom {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+  border-color: #ce93d8;
+}
+
+.rank-phylum {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+}
+
+.rank-class {
+  background-color: #fff3e0;
+  color: #ef6c00;
+  border-color: #ffcc02;
+}
+
+.rank-order {
+  background-color: #fce4ec;
+  color: #c2185b;
+  border-color: #f8bbd9;
+}
+
+.rank-family {
+  background-color: #f1f8e9;
+  color: #558b2f;
+  border-color: #c5e1a5;
+}
+
+.rank-genus {
+  background-color: #e0f2f1;
+  color: #00695c;
+  border-color: #80cbc4;
+}
+
+.rank-species {
+  background-color: #e8eaf6;
+  color: #3f51b5;
+  border-color: #9fa8da;
+}
+
+.rank-subspecies {
+  background-color: #fafafa;
+  color: #424242;
+  border-color: #bdbdbd;
+}
+
+.rank-strain {
+  background-color: #fff8e1;
+  color: #ff8f00;
+  border-color: #ffcc02;
+}
+
+.rank-default {
+  background-color: #f5f5f5;
+  color: #666;
+  border-color: #ccc;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .section-title {
+    color: #f3f3f3;
+    border-bottom-color: #444b53;
+  }
+
+  .table-container {
+    background: #2b3035;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .taxonomy-table th {
+    background-color: #343a40;
+    color: #f8f9fa;
+    border-bottom-color: #495057;
+  }
+
+  .taxonomy-table td {
+    background-color: #2b3035;
+    color: #f8f9fa;
+    border-bottom-color: #495057;
+  }
+
+  .taxonomy-table tbody tr:hover {
+    background-color: #343a40;
+  }
+
+  .tax-id-link {
+    color: #66b3ff;
+  }
+
+  .tax-id-link:hover {
+    background-color: #1a3a52;
+    color: #99ccff;
+  }
+
+  /* Dark mode rank badges */
+  .rank-superkingdom {
+    background-color: #2a3f54;
+    color: #8bb6e8;
+    border-color: #4a5568;
+  }
+
+  .rank-kingdom {
+    background-color: #3d2a54;
+    color: #c8a2db;
+    border-color: #4a5568;
+  }
+
+  .rank-phylum {
+    background-color: #2a4a2a;
+    color: #90c695;
+    border-color: #4a5568;
+  }
+
+  .rank-class {
+    background-color: #54422a;
+    color: #e8b366;
+    border-color: #4a5568;
+  }
+
+  .rank-order {
+    background-color: #54344a;
+    color: #e8a2c8;
+    border-color: #4a5568;
+  }
+
+  .rank-family {
+    background-color: #344a34;
+    color: #95c695;
+    border-color: #4a5568;
+  }
+
+  .rank-genus {
+    background-color: #2a4a44;
+    color: #80c8bc;
+    border-color: #4a5568;
+  }
+
+  .rank-species {
+    background-color: #344254;
+    color: #9cb3e8;
+    border-color: #4a5568;
+  }
+
+  .rank-subspecies {
+    background-color: #3a3a3a;
+    color: #b8b8b8;
+    border-color: #4a5568;
+  }
+
+  .rank-strain {
+    background-color: #544a2a;
+    color: #e8cc66;
+    border-color: #4a5568;
+  }
+
+  .rank-default {
+    background-color: #3a3a3a;
+    color: #a8a8a8;
+    border-color: #4a5568;
+  }
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 768px) {
+  .taxonomy-table {
+    font-size: 0.9rem;
+  }
+
+  .taxonomy-table th,
+  .taxonomy-table td {
+    padding: 0.5rem 0.375rem;
+  }
+
+  .rank-badge {
+    min-width: 60px;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .taxonomy-table th:nth-child(1),
+  .taxonomy-table td:nth-child(1) {
+    width: 25%;
+  }
+
+  .taxonomy-table th:nth-child(2),
+  .taxonomy-table td:nth-child(2) {
+    width: 50%;
+  }
+
+  .taxonomy-table th:nth-child(3),
+  .taxonomy-table td:nth-child(3) {
+    width: 25%;
+  }
+
+  .rank-badge {
+    min-width: 50px;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
   }
 }
 </style>

@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.11"
 
 [[package]]
@@ -32,7 +33,7 @@ name = "click"
 version = "8.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/96/d3/f04c7bfcf5c1862a2a5b845c6b2b360488cf47af55dfa79c98f6a6bf98b5/click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de", size = 336121 }
 wheels = [
@@ -62,6 +63,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/89/50/dff6380f1c7f84135484e176e0cac8690af72fa90e932ad2a0a60e28c69b/flask-3.1.0.tar.gz", hash = "sha256:5f873c5184c897c8d9d1b05df1e3d01b14910ce69607a117bd3277098a5836ac", size = 680824 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/af/47/93213ee66ef8fae3b93b3e29206f6b251e65c97bd91d8e1c5596ef15af0a/flask-3.1.0-py3-none-any.whl", hash = "sha256:d667207822eb83f1c4b50949b1623c8fc8d51f2341d65f72e1a1815397551136", size = 102979 },
+]
+
+[[package]]
+name = "flask-cors"
+version = "6.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flask" },
+    { name = "werkzeug" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/76/37/bcfa6c7d5eec777c4c7cf45ce6b27631cebe5230caf88d85eadd63edd37a/flask_cors-6.0.1.tar.gz", hash = "sha256:d81bcb31f07b0985be7f48406247e9243aced229b7747219160a0559edd678db", size = 13463 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/17/f8/01bf35a3afd734345528f98d0353f2a978a476528ad4d7e78b70c4d149dd/flask_cors-6.0.1-py3-none-any.whl", hash = "sha256:c7b2cbfb1a31aa0d2e5341eea03a6805349f7a61647daee1a15c46bbe981494c", size = 13244 },
 ]
 
 [[package]]
@@ -218,18 +232,19 @@ wheels = [
 
 [[package]]
 name = "taxonomy"
-version = "0.10.0"
+version = "0.10.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/3c/1d/92db661b76e3fd6b34ef3e4dff1b861f89e702520e7420df2f68158d9944/taxonomy-0.10.0.tar.gz", hash = "sha256:3ff7e2299c9554b8b8be2f00bb4cd9722d0ae820e8a271aaf1390a7e790c3f51", size = 109626 }
+sdist = { url = "https://files.pythonhosted.org/packages/93/dc/150fdd3664738e5095e3bcb89cc3923b516f95fd36f3579bc4a7c8e5b2a3/taxonomy-0.10.1.tar.gz", hash = "sha256:a77ac372b1d9e4230a0fb0879707ee680327b7032d320a43434ebd15cd57536a", size = 113120 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/93/979d8b702537269f668cabbe66561fe42b5c494cc8523c14f880e597b9a2/taxonomy-0.10.0-cp311-cp311-macosx_10_7_x86_64.whl", hash = "sha256:539845bf5dbe767bd7732c6c3d67f1f5bcb638b900cda35de39edb7508c09f97", size = 436870 },
-    { url = "https://files.pythonhosted.org/packages/0d/ba/e4c6a5ba24e4457a625ba4e1e2b0ad18245f2d9f23f33effe199a4b0fb4b/taxonomy-0.10.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:27ffdfa76e5f7e087e399874fb97749a9424098b428521b194b7bffcebb68a4a", size = 406123 },
-    { url = "https://files.pythonhosted.org/packages/cc/19/8e3e2cc576ba3e1138b35159d1fa0e1f308a3b1f2afcd2d5920e707f101b/taxonomy-0.10.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3322570e8a484d16577d01bf33afebfdd888e7e669d0a9ad04a53efdc58a49a3", size = 419928 },
-    { url = "https://files.pythonhosted.org/packages/e3/fd/4d4c9115283c2c6ab5800b50b51b975f625364ce54546f8cabc961f4a757/taxonomy-0.10.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:729288ccb9bd4a66eeb3a167cd39f09fec21fe11670816c9e9704d0504610962", size = 455489 },
-    { url = "https://files.pythonhosted.org/packages/09/8d/6ff03977e6d4d334f332f7534ed0545373ce066d832c676a7d448b202af6/taxonomy-0.10.0-cp312-cp312-macosx_10_7_x86_64.whl", hash = "sha256:4d4ad08f69aa079b2de4ee6b258aead01f9dfdd457f703a4b005760341dcbc64", size = 441780 },
-    { url = "https://files.pythonhosted.org/packages/5c/e2/dee99f70d17d55be62531201872a63cad2d7dbd50911bc1cb62f44feca2b/taxonomy-0.10.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:1f3ab6624c028ff91a2f4a80412b2cde7d3e08874c487e9ecf23f8b69b1ea598", size = 414530 },
-    { url = "https://files.pythonhosted.org/packages/d4/7a/5c66db1cf91838030f3576284ede428cbc24b85c5c2d503422ff8e77aa0c/taxonomy-0.10.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b39971af038adf49960986664b9ee678c578bdd694ce551299a82173ef88cfb7", size = 450174 },
-    { url = "https://files.pythonhosted.org/packages/88/f7/dfa6d9d1980649c0ed9ca8c76407a55d6a4afcf17da412f0e06624af5b54/taxonomy-0.10.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a15ab3d2bfb01791d7751f02b395f960863f5fe9af174bc5e505e190d34bd889", size = 455488 },
+    { url = "https://files.pythonhosted.org/packages/20/6f/255cb8a14d05d629e5456a33e371e99d8a5fcb7da8b2afb15f305c502863/taxonomy-0.10.1-cp311-cp311-macosx_10_7_x86_64.whl", hash = "sha256:df470468411916165e83ac73ef9da5f79d47e55e2aec717f8dcb549ad12116b2", size = 498768 },
+    { url = "https://files.pythonhosted.org/packages/ef/c0/e2206ae58cc4ad1a1c657620836d145b4e324ef5b31fc9ceef916b6a3584/taxonomy-0.10.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:a79bff100e778f2488da68c40e69c25d8be0e77d36a6415fb646efefce52b680", size = 482267 },
+    { url = "https://files.pythonhosted.org/packages/45/c7/7aa8eb23f7e45a1c4e8ff2ef4afb3b8dbc27b8694916fcdfd1322fefea04/taxonomy-0.10.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1dda295f30111a6a87ff22b3c5d29fa9a055a26668fdd25be0c121952f37509a", size = 541537 },
+    { url = "https://files.pythonhosted.org/packages/7d/bf/77fb910333401617dbdcb7996bc2fff7473bcde57a56cf6ee0c3bfbc751a/taxonomy-0.10.1-cp312-cp312-macosx_10_7_x86_64.whl", hash = "sha256:21bccbe59cbba584ad93e5f35d768d90c1a03a428ff8a8f99a85092454450a2f", size = 498852 },
+    { url = "https://files.pythonhosted.org/packages/20/f1/522bcd813be86300dd26e82d1fc5a82e0c53bcef9766c37666fe7c07b09a/taxonomy-0.10.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:2b9298e7b30cfbdd047b8129cd4ad0debee8c761211fe961d7023b736acdd6d3", size = 482369 },
+    { url = "https://files.pythonhosted.org/packages/c1/2d/6658ff35b2d2b6d050916d813531e2d382172ea1bd2095260c75da009613/taxonomy-0.10.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a2ba55c8ba67a31aab71a685d5dec05c027452fcb3aa01c66ba67cd0724831f3", size = 541728 },
+    { url = "https://files.pythonhosted.org/packages/a8/53/c3fbf6480e10ac79807d0db931470996dc8f61d3ae57872b9c210d99a7c8/taxonomy-0.10.1-cp313-cp313-macosx_10_7_x86_64.whl", hash = "sha256:176c5293057aa790ac917355df10b7d7db0deed3f0a343b1235c8a525d91cb71", size = 498850 },
+    { url = "https://files.pythonhosted.org/packages/57/9d/e5da5e87ebd76d7de40a3d6ec8f0377e2b7d13e610eaf0d2f8f2b192599d/taxonomy-0.10.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:605aa594d4ee1174a2f82472aa4507f687828a3584bb3041ab6b1f67f795fd7a", size = 482369 },
+    { url = "https://files.pythonhosted.org/packages/73/d7/1d737d2df2324b78d0f632c473a2a3fa78fef561e05ce148ec859420e35e/taxonomy-0.10.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:019473a0394d2017ff6729a6bd479a283ec9666cef96f0a55d4b77074ba2f0dd", size = 541728 },
 ]
 
 [[package]]
@@ -238,6 +253,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "flask" },
+    { name = "flask-cors" },
     { name = "flask-smorest" },
     { name = "polars" },
     { name = "pytest" },
@@ -248,10 +264,11 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "flask", specifier = ">=3.1.0" },
+    { name = "flask-cors", specifier = ">=4.0.0" },
     { name = "flask-smorest", specifier = ">=0.45.0" },
     { name = "polars", specifier = ">=1.13.1" },
     { name = "pytest", specifier = ">=8.3.3" },
-    { name = "taxonomy", specifier = ">=0.10.0" },
+    { name = "taxonomy", specifier = ">=0.10.1" },
     { name = "tqdm", specifier = ">=4.67.0" },
 ]
 
@@ -260,7 +277,7 @@ name = "tqdm"
 version = "4.67.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e8/4f/0153c21dc5779a49a0598c445b1978126b1344bab9ee71e53e44877e14e0/tqdm-4.67.0.tar.gz", hash = "sha256:fe5a6f95e6fe0b9755e9469b77b9c3cf850048224ecaa8293d7d2d31f97d869a", size = 169739 }
 wheels = [

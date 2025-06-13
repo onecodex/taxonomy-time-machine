@@ -6,8 +6,17 @@ from flask import Flask, g
 from flask.views import MethodView
 import marshmallow as ma
 from flask_smorest import Api, Blueprint
+from flask_cors import CORS
 
 app = Flask(__name__)
+
+# Configure CORS for development and production
+if os.environ.get("FLASK_DEBUG"):
+    # In development, allow frontend dev server
+    CORS(app, origins=["http://localhost:5173", "http://127.0.0.1:5173"])
+else:
+    # In production, allow the production domain
+    CORS(app, origins=["https://taxonomy.onecodex.com"])
 app.config["API_TITLE"] = "Taxonomy Time Machine"
 app.config["API_VERSION"] = "v1"
 app.config["OPENAPI_VERSION"] = "3.0.2"
