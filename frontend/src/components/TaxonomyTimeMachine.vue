@@ -482,7 +482,7 @@ export default defineComponent({
         <span style="margin-right: 0.5em; font-weight: bold">Examples:</span>
         <button
           v-for="example in [
-            'Wuhan seafood market pneumonia virus',
+            'SARS-related coronavirus',
             'Bacteroides dorei',
             'Lactobacillus reuteri',
             '[Candida] auris',
