@@ -613,16 +613,12 @@ export default defineComponent({
       <div v-if="version">
         <p class="current-taxon-summary">
           Data retrieved from
-          <code>{{
-            `https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip`
-          }}</code>
           <a
             :href="`https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump_archive/taxdmp_${formatDate(version)}.zip`"
             target="_blank"
             rel="noopener noreferrer"
-            style="margin-left: 0.5em; font-size: 0.95em"
           >
-            [download]
+            NCBI taxdump archive ({{ formatDate(version) }})
           </a>
         </p>
       </div>
@@ -948,13 +944,37 @@ export default defineComponent({
 
 /* Mobile responsiveness */
 @media screen and (max-width: 768px) {
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .taxonomy-table {
     font-size: 0.9rem;
+    min-width: 480px;
   }
 
   .taxonomy-table th,
   .taxonomy-table td {
     padding: 0.5rem 0.375rem;
+  }
+
+  .taxonomy-table th:nth-child(1),
+  .taxonomy-table td:nth-child(1) {
+    width: 100px;
+    min-width: 100px;
+  }
+
+  .taxonomy-table th:nth-child(2),
+  .taxonomy-table td:nth-child(2) {
+    width: auto;
+    min-width: 200px;
+  }
+
+  .taxonomy-table th:nth-child(3),
+  .taxonomy-table td:nth-child(3) {
+    width: 80px;
+    min-width: 80px;
   }
 
   .rank-badge {
@@ -969,25 +989,57 @@ export default defineComponent({
 }
 
 @media screen and (max-width: 480px) {
+  .table-container {
+    margin: 0 -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .taxonomy-table {
+    min-width: 320px;
+  }
+
   .taxonomy-table th:nth-child(1),
   .taxonomy-table td:nth-child(1) {
-    width: 25%;
+    width: 80px;
+    min-width: 80px;
   }
 
   .taxonomy-table th:nth-child(2),
   .taxonomy-table td:nth-child(2) {
-    width: 50%;
+    width: auto;
+    min-width: 150px;
   }
 
   .taxonomy-table th:nth-child(3),
   .taxonomy-table td:nth-child(3) {
-    width: 25%;
+    width: 70px;
+    min-width: 70px;
+    text-align: right;
   }
 
   .rank-badge {
     min-width: 50px;
     font-size: 0.65rem;
     padding: 0.15rem 0.4rem;
+  }
+
+  .name-cell {
+    word-break: break-word;
+  }
+
+  .current-taxon-summary {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+}
+
+/* Additional mobile-specific styles for data source section */
+@media screen and (max-width: 768px) {
+  .current-taxon-summary {
+    font-size: 0.9rem;
+    line-height: 1.4;
   }
 }
 </style>
