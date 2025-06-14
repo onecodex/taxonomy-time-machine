@@ -81,6 +81,12 @@ class VersionSchema(ma.Schema):
     version_date = ma.fields.NaiveDateTime()
 
 
+class RandomSpeciesResponseSchema(ma.Schema):
+    tax_id = ma.fields.String(metadata={"description": "NCBI Taxonomy ID", "example": "9606"})
+    name = ma.fields.String(metadata={"description": "Scientific name", "example": "Homo sapiens"})
+    event_count = ma.fields.Integer(metadata={"description": "Number of taxonomic events", "example": 5})
+
+
 @blp.route("/search")
 class Search(MethodView):
     @blp.arguments(QueryArgsSchema, location="query")
@@ -147,6 +153,50 @@ class Versions(MethodView):
             return resp
         else:
             return []
+
+
+@blp.route("/random-species")
+class RandomSpecies(MethodView):
+    @blp.response(200, RandomSpeciesResponseSchema)
+    def get(self):
+        """Return a random species with taxonomic history"""
+        db = get_taxonomy()
+        cursor = db.cursor
+
+        # Fast random selection using OFFSET with cached count
+        import random
+
+        # Use hardcoded count for speed (approximately 874,797 as of last check)
+        # This doesn't need to be perfectly accurate for random selection
+        total_count = 870000
+        random_offset = random.randint(0, total_count - 1)
+
+        # Get random species using OFFSET
+        cursor.execute("""
+            SELECT tax_id, name
+            FROM taxonomy
+            WHERE rank = 'species'
+            AND name NOT LIKE '%sp.%'
+            AND name NOT LIKE '%phage%'
+            AND name NOT LIKE '%virus%'
+            LIMIT 1 OFFSET ?
+        """, (random_offset,))
+
+        result = cursor.fetchone()
+
+        # Get event count for the selected species
+        cursor.execute("""
+            SELECT COUNT(*) as event_count
+            FROM taxonomy
+            WHERE tax_id = ?
+        """, (result["tax_id"],))
+
+        count_result = cursor.fetchone()
+        return {
+            "tax_id": result["tax_id"],
+            "name": result["name"],
+            "event_count": count_result["event_count"] if count_result else 1
+        }
 
 
 api.register_blueprint(blp)

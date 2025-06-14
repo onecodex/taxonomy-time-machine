@@ -61,6 +61,9 @@ export default defineComponent({
     // Track if the user is actively typing (to avoid overwriting input)
     const userIsTyping = ref(false);
 
+    // Separate loading state for random species button
+    const randomSpeciesLoading = ref(false);
+
     // results
     const versions = ref<TaxonVersion[]>([]);
     const lineage = ref<TaxonVersion[]>([]);
@@ -336,6 +339,34 @@ export default defineComponent({
       await findTaxId();
     };
 
+    // --- Add this function to handle random species ---
+    const handleRandomSpecies = async () => {
+      randomSpeciesLoading.value = true;
+      try {
+        const response = await fetch(`${apiBase}/random-species`, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data && data.tax_id) {
+          query.value = data.name;
+          navigateToTaxon(data.tax_id);
+        }
+      } catch (error) {
+        console.error("Error fetching random species:", error);
+      } finally {
+        randomSpeciesLoading.value = false;
+      }
+    };
+
     // --- Fetch the current taxon for the given taxId ---
     const currentTaxon = ref<TaxonVersion | null>(null);
 
@@ -408,6 +439,8 @@ export default defineComponent({
       selectHighlighted,
       highlightedIndex,
       handleExampleClick,
+      handleRandomSpecies,
+      randomSpeciesLoading,
       currentTaxon,
       getRankClass,
     };
@@ -460,6 +493,15 @@ export default defineComponent({
           @click="() => handleExampleClick(example)"
         >
           {{ example }}
+        </button>
+        <button
+          class="button is-small is-warning"
+          style="margin-right: 0.5em; margin-bottom: 0.5em"
+          @click="handleRandomSpecies"
+          :disabled="randomSpeciesLoading"
+          :class="{ 'is-loading': randomSpeciesLoading }"
+        >
+          🎲 Random Species
         </button>
       </div>
 
