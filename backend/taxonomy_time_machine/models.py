@@ -115,7 +115,9 @@ class Taxonomy:
             return self.cursor.execute(sql, params).fetchall()
         except sqlite3.OperationalError as e:
             if "fts5: syntax error" in str(e).lower():
-                logging.warning(f"FTS syntax error with query: {params}, falling back to empty results")
+                logging.warning(
+                    f"FTS syntax error with query: {params}, falling back to empty results"
+                )
                 return []
             else:
                 # Re-raise other operational errors
@@ -211,7 +213,6 @@ class Taxonomy:
         self._profile("search_names", _profile_start, time.perf_counter())
         return events
 
-
     @lru_cache(maxsize=256)
     def get_events(
         self,
@@ -238,7 +239,6 @@ class Taxonomy:
         result = sorted(rows, key=lambda r: r.version_date)
         self._profile("get_events", _profile_start, time.perf_counter())
         return result
-
 
     @lru_cache(maxsize=256)
     def get_children(self, tax_id: str, as_of: datetime | None = None):
@@ -344,7 +344,6 @@ class Taxonomy:
 
         self._profile("get_versions", _profile_start, time.perf_counter())
         return versions_with_changes
-
 
     @lru_cache(maxsize=256)
     def get_lineage(self, tax_id: str, as_of: datetime | None = None):
