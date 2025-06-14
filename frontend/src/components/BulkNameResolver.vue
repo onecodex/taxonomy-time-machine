@@ -25,30 +25,9 @@ export default defineComponent({
     const results = ref<ResolvedName[]>([]);
     const processedCount = ref(0);
 
-    // Get the latest available date as default
-    const initializeDefaultDate = async () => {
-      try {
-        // We'll use a known tax_id to get available versions
-        const response = await apiFetchWithCache(
-          `${props.apiBase}/versions?tax_id=1`,
-        );
-        if (response && response.length > 0) {
-          // Get the most recent date
-          const latestDate = response
-            .map((v: any) => new Date(v.version_date))
-            .sort((a: Date, b: Date) => b.getTime() - a.getTime())[0];
-
-          targetDate.value = latestDate.toISOString().split("T")[0];
-        }
-      } catch (error) {
-        console.warn("Could not fetch latest date, using empty default");
-      }
-    };
-
-    // Initialize with current date as fallback
+    // Initialize with current date as default
     const today = new Date();
     targetDate.value = today.toISOString().split("T")[0];
-    initializeDefaultDate();
 
     const formatDate = (isoDate: string): string => {
       const date = new Date(isoDate + "T00:00:00");
@@ -182,6 +161,28 @@ export default defineComponent({
       processedCount.value = 0;
     };
 
+    const loadExampleTaxa = async () => {
+      // Human-relevant pathogens with verified nomenclature changes - using outdated names
+      const exampleTaxa = [
+        "Candida pseudohaemulonii", // Now: Candidozyma pseudohaemuli (opportunistic pathogen)
+        "Lactobacillus reuteri", // Now: Limosilactobacillus reuteri (probiotic)
+        "Mycobacterium koreense", // Now: Mycolicibacillus koreensis (environmental mycobacterium)
+        "SARS-related coronavirus", // Now: Severe acute respiratory syndrome-related coronavirus
+        "Enterobacteria phage RB32", // Now: Tequatrovirus RB32 (E. coli phage)
+        "Candida haemulonis", // Now: Candidozyma haemuli (multidrug-resistant pathogen)
+        "Candida duobushaemulonii", // Now: Candidozyma duobushaemuli (emerging pathogen)
+        "Escherichia virus RB32", // Now: Tequatrovirus RB32 (bacteriophage)
+        "Candida chanthaburiensis", // Multiple nomenclature changes (clinical isolate)
+        "Lactobacillus timonenis", // Now: [Lactobacillus] timonensis (gut microbe)
+      ];
+
+      inputNames.value = exampleTaxa.join("\n");
+      clearResults();
+
+      // Automatically run the query
+      await processNames();
+    };
+
     const exportResults = () => {
       if (results.value.length === 0) return;
 
@@ -234,6 +235,7 @@ export default defineComponent({
       processedCount,
       processNames,
       clearResults,
+      loadExampleTaxa,
       exportResults,
       formatDisplayDate,
       resolvedCount,
@@ -257,11 +259,22 @@ export default defineComponent({
     </div>
 
     <div class="content-section">
-      <p class="description">
-        Resolve multiple taxonomic names to their current nomenclature at a
-        specific date. Enter one name per line and select the target date for
-        name resolution.
-      </p>
+      <div class="notification">
+        <p class="description">
+          Resolve multiple taxonomic names to their current nomenclature at a
+          specific date. Enter one name per line and select the target date for
+          name resolution.
+        </p>
+        <div style="margin-top: 1rem">
+          <button
+            @click="loadExampleTaxa"
+            class="button"
+            :disabled="isProcessing"
+          >
+            🧬 Try Example
+          </button>
+        </div>
+      </div>
 
       <!-- Input Section -->
       <div class="input-section">
@@ -281,13 +294,13 @@ export default defineComponent({
         </div>
 
         <div class="field">
-          <label class="label">Taxonomic Names (one per line)</label>
+          <label class="label">Taxonomic Names or Tax IDs (one per line)</label>
           <div class="control">
             <textarea
               v-model="inputNames"
               class="textarea"
               rows="10"
-              placeholder="Enter taxonomic names, one per line:&#10;Lactobacillus reuteri&#10;Bacteroides dorei&#10;[Candida] auris&#10;Wuhan seafood market pneumonia virus"
+              placeholder="Enter taxonomic names or tax IDs, one per line"
               :disabled="isProcessing"
             ></textarea>
           </div>
