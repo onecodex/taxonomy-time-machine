@@ -2,6 +2,7 @@ from taxonomy_time_machine.models import Taxonomy
 from datetime import datetime
 
 import os
+import random
 from flask import Flask, g
 from flask.views import MethodView
 import marshmallow as ma
@@ -164,38 +165,39 @@ class RandomSpecies(MethodView):
         cursor = db.cursor
 
         # Fast random selection using OFFSET with cached count
-        import random
-
         # Use hardcoded count for speed (approximately 874,797 as of last check)
         # This doesn't need to be perfectly accurate for random selection
-        total_count = 870000
+        total_count = 870_000
         random_offset = random.randint(0, total_count - 1)
 
         # Get random species using OFFSET
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT tax_id, name
             FROM taxonomy
             WHERE rank = 'species'
-            AND name NOT LIKE '%sp.%'
-            AND name NOT LIKE '%phage%'
-            AND name NOT LIKE '%virus%'
             LIMIT 1 OFFSET ?
-        """, (random_offset,))
+        """,
+            (random_offset,),
+        )
 
         result = cursor.fetchone()
 
         # Get event count for the selected species
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT COUNT(*) as event_count
             FROM taxonomy
             WHERE tax_id = ?
-        """, (result["tax_id"],))
+        """,
+            (result["tax_id"],),
+        )
 
         count_result = cursor.fetchone()
         return {
             "tax_id": result["tax_id"],
             "name": result["name"],
-            "event_count": count_result["event_count"] if count_result else 1
+            "event_count": count_result["event_count"] if count_result else 1,
         }
 
 
