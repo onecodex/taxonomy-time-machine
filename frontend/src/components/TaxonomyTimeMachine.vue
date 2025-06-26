@@ -2,6 +2,7 @@
 import { defineComponent, ref, watch, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { apiFetchWithCache } from "../utils/apiCache";
+import Timeline from "./TaxonomyTimeMachine/Timeline.vue";
 
 interface TaxonVersion {
   tax_id: string;
@@ -14,6 +15,9 @@ interface TaxonVersion {
 export default defineComponent({
   name: "SearchComponent",
   // see vite.config.ts
+  components: {
+    Timeline,
+  },
   props: {
     apiBase: {
       type: String,
@@ -551,21 +555,12 @@ export default defineComponent({
         </div>
       </div>
 
-      <nav
-        class="breadcrumb is-centered has-succeeds-separator"
-        aria-label="breadcrumbs"
-      >
-        <ul>
-          <li
-            v-for="v in versions"
-            :class="{ 'is-active': v.version_date === version }"
-          >
-            <a href="#" @click.prevent="updateVersion(v.version_date)">
-              {{ formatDate(v.version_date) }}
-            </a>
-          </li>
-        </ul>
-      </nav>
+      <!-- Timeline Component -->
+      <Timeline 
+        :versions="versions" 
+        :current-version="version"
+        @update-version="updateVersion"
+      />
 
       <!-- Current Taxon Info (moved above columns for better visibility) -->
       <div
