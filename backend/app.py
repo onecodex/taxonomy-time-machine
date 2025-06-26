@@ -8,6 +8,7 @@ from flask.views import MethodView
 import marshmallow as ma
 from flask_smorest import Api, Blueprint
 from flask_cors import CORS
+import threading
 
 app = Flask(__name__)
 
@@ -46,10 +47,13 @@ blp = Blueprint("taxonomy", "taxonomy", url_prefix="/", description="Taxonomy Ti
 DATABASE_PATH = os.environ.get("DATABASE_PATH", "events.db")
 
 
+_local = threading.local()
+
+
 def get_taxonomy():
-    if not hasattr(g, "taxonomy"):
-        g.taxonomy = Taxonomy(database_path=DATABASE_PATH)
-    return g.taxonomy
+    if not hasattr(_local, "taxonomy"):
+        _local.taxonomy = Taxonomy(database_path=DATABASE_PATH)
+    return _local.taxonomy
 
 
 class QueryArgsSchema(ma.Schema):
