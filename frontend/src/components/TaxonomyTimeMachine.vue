@@ -456,7 +456,10 @@ export default defineComponent({
   <!-- Header -->
   <div class="container">
     <div class="header-container">
-      <h1 class="title responsive-title">{{ emoji }} Taxonomy Time Machine</h1>
+      <div class="title-section">
+        <h1 class="title responsive-title">{{ emoji }} Taxonomy Time Machine</h1>
+        <p class="one-codex-link">By <a href="https://onecodex.com" target="_blank" rel="noopener noreferrer">One Codex</a></p>
+      </div>
       <div class="documentation-links">
         <router-link to="/bulk-resolver" class="button is-small is-info">
           🔄 Bulk Resolver
@@ -677,12 +680,35 @@ export default defineComponent({
   gap: 1rem;
 }
 
+.title-section {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .responsive-title {
   margin: 0;
   font-size: 2rem;
   line-height: 1.2;
-  flex: 1;
-  min-width: 0;
+}
+
+.one-codex-link {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+.one-codex-link a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.one-codex-link a:hover {
+  text-decoration: underline;
 }
 
 .documentation-links {
@@ -699,10 +725,14 @@ export default defineComponent({
     align-items: stretch;
   }
 
-  .responsive-title {
-    font-size: 1.5rem;
+  .title-section {
+    justify-content: center;
     text-align: center;
     margin-bottom: 0.5rem;
+  }
+
+  .responsive-title {
+    font-size: 1.5rem;
   }
 
   .documentation-links {
@@ -718,6 +748,10 @@ export default defineComponent({
 @media screen and (max-width: 480px) {
   .responsive-title {
     font-size: 1.25rem;
+  }
+
+  .one-codex-link {
+    font-size: 0.8rem;
   }
 
   .documentation-links {
