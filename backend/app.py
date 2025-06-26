@@ -47,7 +47,7 @@ DATABASE_PATH = os.environ.get("DATABASE_PATH", "events.db")
 
 
 def get_taxonomy():
-    if "taxonomy" not in g:
+    if not hasattr(g, "taxonomy"):
         g.taxonomy = Taxonomy(database_path=DATABASE_PATH)
     return g.taxonomy
 
