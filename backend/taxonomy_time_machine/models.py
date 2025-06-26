@@ -10,7 +10,7 @@ import time
 import logging
 
 # Set logging level to INFO so profiling messages are visible
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
 
 class EventName(Enum):
