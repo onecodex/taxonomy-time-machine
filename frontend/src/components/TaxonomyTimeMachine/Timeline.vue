@@ -50,18 +50,57 @@ const timelineData = computed(() => {
   const lastDate = new Date(sortedVersions.value[sortedVersions.value.length - 1].version_date || '');
   const totalDuration = lastDate.getTime() - firstDate.getTime();
 
-  return sortedVersions.value.map((version, index) => {
+  // Calculate initial positions
+  const initialData = sortedVersions.value.map((version, index) => {
     const versionDate = new Date(version.version_date || '');
     const position = totalDuration === 0 ? 0 : ((versionDate.getTime() - firstDate.getTime()) / totalDuration) * 100;
 
     return {
       ...version,
       position,
+      labelPosition: position, // Start with same position as dot
       isActive: version.version_date === props.currentVersion,
       isFirst: index === 0,
       isLast: index === sortedVersions.value.length - 1,
     };
   });
+
+  // Apply label repulsion algorithm
+  const minLabelDistance = 8; // Minimum distance between labels in percentage
+  const repulsionStrength = 0.3; // How strongly labels repel each other
+  const maxIterations = 50;
+
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    let hasOverlap = false;
+
+    for (let i = 0; i < initialData.length; i++) {
+      for (let j = i + 1; j < initialData.length; j++) {
+        const item1 = initialData[i];
+        const item2 = initialData[j];
+        const distance = Math.abs(item1.labelPosition - item2.labelPosition);
+
+        if (distance < minLabelDistance) {
+          hasOverlap = true;
+          const overlap = minLabelDistance - distance;
+          const repulsion = overlap * repulsionStrength;
+
+          // Move labels away from each other
+          if (item1.labelPosition < item2.labelPosition) {
+            item1.labelPosition = Math.max(0, item1.labelPosition - repulsion / 2);
+            item2.labelPosition = Math.min(100, item2.labelPosition + repulsion / 2);
+          } else {
+            item1.labelPosition = Math.min(100, item1.labelPosition + repulsion / 2);
+            item2.labelPosition = Math.max(0, item2.labelPosition - repulsion / 2);
+          }
+        }
+      }
+    }
+
+    // If no overlaps, we're done
+    if (!hasOverlap) break;
+  }
+
+  return initialData;
 });
 
 const handleVersionClick = (version: VersionData) => {
@@ -90,7 +129,12 @@ const handleVersionClick = (version: VersionData) => {
           }"
           :title="formatDateLong(version.version_date)"
         ></div>
-        <div class="timeline-label" :class="{ 'is-active': version.isActive }">
+
+        <div
+          class="timeline-label"
+          :class="{ 'is-active': version.isActive }"
+          :style="{ left: `${(version.labelPosition - version.position)}%` }"
+        >
           {{ formatDateShort(version.version_date) }}
         </div>
       </div>
@@ -208,6 +252,22 @@ const handleVersionClick = (version: VersionData) => {
   opacity: 1;
 }
 
+.timeline-connector {
+  position: absolute;
+  top: 31px;
+  height: 1px;
+  background: #ccc;
+  transform-origin: left center;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.timeline-dot-container:hover .timeline-connector {
+  background: #3273dc;
+  height: 2px;
+  top: 30.5px;
+}
+
 .timeline-legend {
   display: flex;
   justify-content: space-between;
@@ -276,6 +336,14 @@ const handleVersionClick = (version: VersionData) => {
   .timeline-legend {
     color: #a8a8a8;
   }
+
+  .timeline-connector {
+    background: #4a5568;
+  }
+
+  .timeline-dot-container:hover .timeline-connector {
+    background: #66b3ff;
+  }
 }
 
 /* Mobile responsiveness */
@@ -311,6 +379,14 @@ const handleVersionClick = (version: VersionData) => {
   .timeline-legend {
     padding: 0 10px;
     font-size: 0.75rem;
+  }
+
+  .timeline-connector {
+    top: 26px;
+  }
+
+  .timeline-dot-container:hover .timeline-connector {
+    top: 25.5px;
   }
 }
 
@@ -351,6 +427,14 @@ const handleVersionClick = (version: VersionData) => {
   .timeline-legend {
     padding: 0 5px;
     font-size: 0.7rem;
+  }
+
+  .timeline-connector {
+    top: 27px;
+  }
+
+  .timeline-dot-container:hover .timeline-connector {
+    top: 26.5px;
   }
 }
 </style>
