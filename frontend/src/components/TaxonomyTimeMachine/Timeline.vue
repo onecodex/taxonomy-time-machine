@@ -106,11 +106,55 @@ const timelineData = computed(() => {
 const handleVersionClick = (version: VersionData) => {
   emit('update-version', version.version_date);
 };
+
+const currentVersionIndex = computed(() => {
+  return sortedVersions.value.findIndex(
+    (version) => version.version_date === props.currentVersion
+  );
+});
+
+const canGoToPrevious = computed(() => {
+  return currentVersionIndex.value > 0;
+});
+
+const canGoToNext = computed(() => {
+  return currentVersionIndex.value < sortedVersions.value.length - 1;
+});
+
+const goToPrevious = () => {
+  if (canGoToPrevious.value) {
+    const previousVersion = sortedVersions.value[currentVersionIndex.value - 1];
+    emit('update-version', previousVersion.version_date);
+  }
+};
+
+const goToNext = () => {
+  if (canGoToNext.value) {
+    const nextVersion = sortedVersions.value[currentVersionIndex.value + 1];
+    emit('update-version', nextVersion.version_date);
+  }
+};
 </script>
 
 <template>
   <div v-if="versions.length > 0" class="timeline-container">
-    <h3 class="timeline-title">Version Timeline</h3>
+    <div class="timeline-header">
+      <button
+        class="timeline-nav-button"
+        :disabled="!canGoToPrevious"
+        @click="goToPrevious"
+      >
+        &larr; Prev
+      </button>
+      <h3 class="timeline-title">Version Timeline</h3>
+      <button
+        class="timeline-nav-button"
+        :disabled="!canGoToNext"
+        @click="goToNext"
+      >
+        Next &rarr;
+      </button>
+    </div>
     <div class="timeline-wrapper">
       <div class="timeline-line"></div>
       <div
@@ -155,12 +199,42 @@ const handleVersionClick = (version: VersionData) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
 .timeline-title {
   font-size: 1.25rem;
   font-weight: bold;
   color: #363636;
-  margin-bottom: 1.5rem;
+  margin: 0;
   text-align: center;
+  flex-grow: 1;
+}
+
+.timeline-nav-button {
+  background: #f5f5f5;
+  border: 1px solid #dbdbdb;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #363636;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.timeline-nav-button:hover:not(:disabled) {
+  background: #e8e8e8;
+  border-color: #b5b5b5;
+}
+
+.timeline-nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .timeline-wrapper {
@@ -293,6 +367,17 @@ const handleVersionClick = (version: VersionData) => {
     color: #f3f3f3;
   }
 
+  .timeline-nav-button {
+    background: #3a4147;
+    border-color: #4a5568;
+    color: #f3f3f3;
+  }
+
+  .timeline-nav-button:hover:not(:disabled) {
+    background: #4a5568;
+    border-color: #66b3ff;
+  }
+
   .timeline-line {
     background: linear-gradient(to right, #4a5568, #66b3ff, #4a5568);
   }
@@ -388,6 +473,22 @@ const handleVersionClick = (version: VersionData) => {
   .timeline-dot-container:hover .timeline-connector {
     top: 25.5px;
   }
+
+  .timeline-header {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .timeline-title {
+    order: -1;
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  .timeline-nav-button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
 }
 
 @media screen and (max-width: 480px) {
@@ -435,6 +536,11 @@ const handleVersionClick = (version: VersionData) => {
 
   .timeline-dot-container:hover .timeline-connector {
     top: 26.5px;
+  }
+
+  .timeline-nav-button {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
   }
 }
 </style>
