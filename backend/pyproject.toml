@@ -7,8 +7,7 @@ dependencies = [
     "flask-cors>=4.0.0",
     "flask-smorest>=0.45.0",
     "flask>=3.1.0",
-    "polars>=1.13.1",
-    "pytest>=8.3.3",
+    "polars",
     "taxonomy>=0.10.1",
     "tqdm>=4.67.0",
 ]
@@ -19,3 +18,8 @@ ttm-load = "taxonomy_time_machine.load_data:main"
 [tool.setuptools.packages.find]
 include = ["taxonomy_time_machine*"]
 exclude = ["dumps*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.3",
+]
