@@ -2,7 +2,6 @@
 name = "taxonomy-time-machine"
 version = "0.1.0"
 description = "Add your description here"
-readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "flask-cors>=4.0.0",
@@ -13,3 +12,10 @@ dependencies = [
     "taxonomy>=0.10.1",
     "tqdm>=4.67.0",
 ]
+
+[project.scripts]
+ttm-load = "taxonomy_time_machine.load_data:main"
+
+[tool.setuptools.packages.find]
+include = ["taxonomy_time_machine*"]
+exclude = ["dumps*"]

@@ -1,98 +1,14 @@
-import sqlite3
 from datetime import datetime
-from typing import Literal
 from functools import lru_cache
-
-from dataclasses import dataclass
-from enum import Enum
-
-import time
 import logging
+import sqlite3
+import time
+from typing import Literal
 
-# Set logging level to INFO so profiling messages are visible
-logging.basicConfig(level=logging.WARNING)
-
-
-class EventName(Enum):
-    Create = "create"
-    Delete = "delete"
-    Update = "alter"  # TODO: change me to Update
+from .event import Event, EventName
 
 
-@dataclass
-class Event:
-    event_name: EventName
-    tax_id: str
-    version_date: datetime
-    name: str | None = None
-    rank: str | None = None
-    parent_id: str | None = None
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        version_date = data["version_date"]
-
-        if type(version_date) is str:
-            version_date = datetime.fromisoformat(data["version_date"])
-
-        return cls(
-            event_name=EventName(data["event_name"]),  # Convert to enum
-            tax_id=data["tax_id"],
-            version_date=version_date,
-            name=data.get("name"),
-            rank=data.get("rank"),
-            parent_id=data.get("parent_id"),
-        )
-
-    def to_dict(self) -> dict:
-        return {
-            "event_name": self.event_name.value,
-            "version_date": self.version_date,
-            "tax_id": self.tax_id,
-            "parent_id": self.parent_id,
-            "name": self.name,
-            "rank": self.rank,
-        }
-
-
-def _get_all_events_recursive(
-    db: "Taxonomy", tax_id: str, seen_tax_ids: set | None = None
-) -> list[Event]:
-    """
-    Find all events for a given tax ID and any events for its parent's and
-    their parents, etc...
-
-    TODO: also find all events for the children of a tax ID
-
-    TODO: this sometimes finds irrelevant events like a new node is created
-    under a node in the lineage but isn't directly part of the current taxon's
-    lineage
-    """
-
-    events: list[Event] = []
-
-    if seen_tax_ids is None:
-        seen_tax_ids = set()
-
-    if tax_id in seen_tax_ids:
-        return events
-
-    seen_tax_ids.add(tax_id)
-
-    for event in db.get_events(tax_id):
-        events.append(event)
-        seen_tax_ids.add(event.tax_id)
-        if event.parent_id and event.parent_id not in seen_tax_ids:
-            events.extend(
-                _get_all_events_recursive(db, tax_id=event.parent_id, seen_tax_ids=seen_tax_ids)
-            )
-
-        seen_tax_ids.add(event.parent_id)
-
-    return sorted(events, key=lambda e: e.version_date)
-
-
-class Taxonomy:
+class TaxonomyTimeMachine:
     def __init__(self, database_path: str = "events.db"):
         self.conn = sqlite3.connect(database_path)
         self.conn.row_factory = sqlite3.Row  # return Row instead of tuple
@@ -377,3 +293,56 @@ class Taxonomy:
 
         self._profile("get_lineage", _profile_start, time.perf_counter())
         return lineage
+
+    def iter_most_recent_events(self) -> dict[str, Event]:
+        """Get the most recent event (version) for each Tax ID in the database"""
+
+        print("fetching most recent versions")
+        rows = self.cursor.execute("""
+        SELECT * FROM taxonomy t1
+        WHERE t1.version_date = (
+            SELECT MAX(t2.version_date) 
+            FROM taxonomy t2 
+            WHERE t2.tax_id = t1.tax_id
+        )
+        """)
+
+        return {r["tax_id"]: Event.from_dict(dict(r)) for r in rows}
+
+    def _get_all_events_recursive(
+        self, tax_id: str, seen_tax_ids: set | None = None
+    ) -> list[Event]:
+        """
+        Find all events for a given tax ID and any events for its parent's and
+        their parents, etc...
+
+        TODO: also find all events for the children of a tax ID
+
+        TODO: this sometimes finds irrelevant events like a new node is created
+        under a node in the lineage but isn't directly part of the current taxon's
+        lineage
+        """
+
+        events: list[Event] = []
+
+        if seen_tax_ids is None:
+            seen_tax_ids = set()
+
+        if tax_id in seen_tax_ids:
+            return events
+
+        seen_tax_ids.add(tax_id)
+
+        for event in self.get_events(tax_id):
+            events.append(event)
+            seen_tax_ids.add(event.tax_id)
+            if event.parent_id and event.parent_id not in seen_tax_ids:
+                events.extend(
+                    self._get_all_events_recursive(
+                        tax_id=event.parent_id, seen_tax_ids=seen_tax_ids
+                    )
+                )
+
+            seen_tax_ids.add(event.parent_id)
+
+        return sorted(events, key=lambda e: e.version_date)
