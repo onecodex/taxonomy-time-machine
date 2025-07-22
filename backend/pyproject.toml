@@ -4,10 +4,12 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
+    "alembic>=1.14.0",
     "flask-cors>=4.0.0",
     "flask-smorest>=0.45.0",
     "flask>=3.1.0",
     "polars",
+    "sqlalchemy>=2.0.0",
     "taxonomy>=0.10.1",
     "tqdm>=4.67.0",
 ]
