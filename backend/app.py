@@ -1,14 +1,14 @@
-from taxonomy_time_machine.models import Taxonomy
-from datetime import datetime
-
 import os
 import random
-from flask import Flask, g
-from flask.views import MethodView
-import marshmallow as ma
-from flask_smorest import Api, Blueprint
-from flask_cors import CORS
 import threading
+
+import marshmallow as ma
+from flask import Flask
+from flask.views import MethodView
+from flask_cors import CORS
+from flask_smorest import Api, Blueprint
+
+from taxonomy_time_machine import TaxonomyTimeMachine
 
 app = Flask(__name__)
 
@@ -52,7 +52,7 @@ _local = threading.local()
 
 def get_taxonomy():
     if not hasattr(_local, "taxonomy"):
-        _local.taxonomy = Taxonomy(database_path=DATABASE_PATH)
+        _local.taonomy = TaxonomyTimeMachine(database_path=DATABASE_PATH)
     return _local.taxonomy
 
 
@@ -78,7 +78,7 @@ class ChildrenQuerySchema(ma.Schema):
     )
 
     @ma.pre_load
-    def coerce_empty_to_none(self, data, **kwargs):
+    def coerce_empty_to_none(self, data, **_):
         data = data.copy()
         for key, value in data.items():
             if value == "":
@@ -171,7 +171,7 @@ class Versions(MethodView):
     @blp.response(200, VersionSchema(many=True))
     def get(self, args):
         """Return all available database versions where the given tax ID appears"""
-        db = Taxonomy(database_path=DATABASE_PATH)
+        db = get_taxonomy()
         tax_id = args.get("tax_id")
         versions = db.get_versions(tax_id=tax_id)
         if tax_id:
