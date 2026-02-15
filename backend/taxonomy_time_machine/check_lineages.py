@@ -5,9 +5,9 @@ from tqdm import tqdm
 from pathlib import Path
 from datetime import datetime
 
-from models import Taxonomy as TaxonomyTimeMachine
+from taxonomy_time_machine import TimeMachine
 
-ttm = TaxonomyTimeMachine("events.db")
+ttm = TimeMachine("events.db")
 
 taxdumps = sorted(
     [p for p in Path("dumps").glob("*") if p.is_dir()],

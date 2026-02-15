@@ -8,7 +8,7 @@ from flask.views import MethodView
 from flask_cors import CORS
 from flask_smorest import Api, Blueprint
 
-from taxonomy_time_machine import TaxonomyTimeMachine
+from taxonomy_time_machine import TimeMachine
 
 app = Flask(__name__)
 
@@ -33,7 +33,10 @@ app.config["OPENAPI_REDOC_URL"] = (
 if not os.environ.get("FLASK_DEBUG"):
     app.config["API_SPEC_OPTIONS"] = {
         "servers": [
-            {"url": "https://taxonomy.onecodex.com/api", "description": "Production server"}
+            {
+                "url": "https://taxonomy.onecodex.com/api",
+                "description": "Production server",
+            }
         ]
     }
 
@@ -42,7 +45,12 @@ api = Api(app)
 # TODO: we can cut down on the number of DB queries by fetching the events
 # first and then filtering them ...
 
-blp = Blueprint("taxonomy", "taxonomy", url_prefix="/", description="Taxonomy Time Machine API")
+blp = Blueprint(
+    "taxonomy",
+    "taxonomy",
+    url_prefix="/",
+    description="Taxonomy Time Machine API",
+)
 
 DATABASE_PATH = os.environ.get("DATABASE_PATH", "events.db")
 
@@ -52,13 +60,16 @@ _local = threading.local()
 
 def get_taxonomy():
     if not hasattr(_local, "taxonomy"):
-        _local.taonomy = TaxonomyTimeMachine(database_path=DATABASE_PATH)
+        _local.taonomy = TimeMachine(database_path=DATABASE_PATH)
     return _local.taxonomy
 
 
 class QueryArgsSchema(ma.Schema):
     query = ma.fields.String(
-        metadata={"description": "Search term (taxon name or ID)", "example": "Bacteroides dorei"}
+        metadata={
+            "description": "Search term (taxon name or ID)",
+            "example": "Bacteroides dorei",
+        }
     )
 
 
@@ -94,10 +105,14 @@ class TaxonSchema(ma.Schema):
     rank = ma.fields.String(metadata={"description": "Taxonomic rank", "example": "species"})
     tax_id = ma.fields.String(metadata={"description": "NCBI Taxonomy ID", "example": "9606"})
     parent_id = ma.fields.String(
-        allow_none=True, metadata={"description": "Parent taxon ID", "example": "9605"}
+        allow_none=True,
+        metadata={"description": "Parent taxon ID", "example": "9605"},
     )
     version_date = ma.fields.NaiveDateTime(
-        metadata={"description": "ISO8601-formatted datetime", "example": "2014-08-01T00:00:00"}
+        metadata={
+            "description": "ISO8601-formatted datetime",
+            "example": "2014-08-01T00:00:00",
+        }
     )
 
 

@@ -5,14 +5,14 @@ default: events.db
 dumps:
 	scripts/fetch-data.sh
 
-events.db: dumps
-	./taxonomy_time_machine/load_data.py \
-		--db-path $@
+migrate:
+	alembic upgrade head
+
+events.db: dumps migrate
+	ttm-load --db-path $@
 
 events-all.db: dumps
-	./taxonomy_time_machine/load_data.py \
-		--always-insert \
-		--db-path $@
+	ttm-load --always-insert --db-path $@
 
 test-lineages: events.db
 	./taxonomy_time_machine/check_lineages.py

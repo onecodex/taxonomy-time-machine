@@ -1,12 +1,12 @@
 import pytest
 
-from taxonomy_time_machine import TaxonomyTimeMachine, EventName, Event
+from taxonomy_time_machine import TimeMachine, EventName, Event
 from datetime import datetime
 
 
 @pytest.fixture
 def db():
-    return TaxonomyTimeMachine()
+    return TimeMachine()
 
 
 def test_search_names(db):

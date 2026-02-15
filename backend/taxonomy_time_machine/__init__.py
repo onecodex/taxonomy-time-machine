@@ -1,2 +1,2 @@
-from .taxonomy_time_machine import TaxonomyTimeMachine
+from .time_machine import TimeMachine
 from .event import Event, EventName

@@ -10,13 +10,22 @@ from sqlalchemy.orm import sessionmaker
 from taxonomy import Taxonomy
 from tqdm import tqdm
 
-from . import Event, EventName, TaxonomyTimeMachine
-from .models import Base, TaxonomySource, Taxonomy as TaxonomyModel
+from .event import Event, EventName
+from . import TimeMachine
+from .models import (
+    TaxonomySource,
+    Taxonomy as TaxonomyModel,
+)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--db-path", required=True, type=str, help="path to output sqltie database")
+    parser.add_argument(
+        "--db-path",
+        required=True,
+        type=str,
+        help="path to output sqltie database",
+    )
     return parser.parse_args()
 
 
@@ -27,7 +36,7 @@ def dump_path_to_datetime(dump_path: Path) -> datetime:
 def load_current_tax_id_to_node(database_path: str) -> dict[str, Event]:
     """Load current tax ID to node state"""
 
-    return TaxonomyTimeMachine(database_path=database_path).iter_most_recent_events()
+    return TimeMachine(database_path=database_path).iter_most_recent_events()
 
 
 def setup_sqlite_performance(engine):

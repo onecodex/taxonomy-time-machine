@@ -8,7 +8,7 @@ from typing import Literal
 from .event import Event, EventName
 
 
-class TaxonomyTimeMachine:
+class TimeMachine:
     def __init__(self, database_path: str = "events.db"):
         self.conn = sqlite3.connect(database_path)
         self.conn.row_factory = sqlite3.Row  # return Row instead of tuple
@@ -301,8 +301,8 @@ class TaxonomyTimeMachine:
         rows = self.cursor.execute("""
         SELECT * FROM taxonomy t1
         WHERE t1.version_date = (
-            SELECT MAX(t2.version_date) 
-            FROM taxonomy t2 
+            SELECT MAX(t2.version_date)
+            FROM taxonomy t2
             WHERE t2.tax_id = t1.tax_id
         )
         """)
