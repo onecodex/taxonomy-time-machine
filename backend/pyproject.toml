@@ -10,7 +10,7 @@ dependencies = [
     "flask>=3.1.0",
     "polars",
     "sqlalchemy>=2.0.0",
-    "taxonomy>=0.10.1",
+    "taxonomy>=0.10.3",
     "tqdm>=4.67.0",
 ]
 
