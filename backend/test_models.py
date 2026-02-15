@@ -1,7 +1,8 @@
+from datetime import datetime
+
 import pytest
 
-from taxonomy_time_machine import TimeMachine, EventName, Event
-from datetime import datetime
+from taxonomy_time_machine import Event, EventName, TimeMachine
 
 
 @pytest.fixture
