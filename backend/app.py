@@ -60,7 +60,7 @@ _local = threading.local()
 
 def get_taxonomy():
     if not hasattr(_local, "taxonomy"):
-        _local.taonomy = TimeMachine(database_path=DATABASE_PATH)
+        _local.taxonomy = TimeMachine(database_path=DATABASE_PATH)
     return _local.taxonomy
 
 
