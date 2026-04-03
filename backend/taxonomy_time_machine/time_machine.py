@@ -281,6 +281,17 @@ class TimeMachine:
                     break
 
             if parent is not None:
+                if parent.event_name == EventName.Delete:
+                    last_known = next((e for e in reversed(events) if e.name), None)
+                    if last_known:
+                        parent = Event(
+                            event_name=parent.event_name,
+                            tax_id=parent.tax_id,
+                            version_date=parent.version_date,
+                            name=last_known.name,
+                            rank=last_known.rank,
+                            parent_id=parent.parent_id,
+                        )
                 lineage.append(parent)
             else:
                 break

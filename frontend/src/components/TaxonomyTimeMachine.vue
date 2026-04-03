@@ -10,6 +10,7 @@ interface TaxonVersion {
   name: string | null;
   rank: string | null;
   version_date: string | null;
+  event_name?: string;
 }
 
 export default defineComponent({
@@ -50,6 +51,12 @@ export default defineComponent({
         month: "long",
         day: "numeric",
       });
+    };
+
+    const formatShortDate = (isoDate: string | null): string => {
+      if (!isoDate) return "";
+      const date = new Date(isoDate);
+      return date.toLocaleDateString(undefined, { year: "numeric", month: "short" });
     };
 
     // ~~~~~~~~~~~~~~~~~~~
@@ -468,6 +475,7 @@ export default defineComponent({
       setTaxId,
       formatDate,
       formatDisplayDate,
+      formatShortDate,
       suggestions,
       loading,
       fetchSuggestions,
@@ -641,13 +649,16 @@ export default defineComponent({
               </tr>
             </thead>
             <tbody>
-              <tr v-for="node in lineage" :key="node.tax_id">
+              <tr v-for="node in lineage" :key="node.tax_id" :class="{ 'lineage-row--deleted': node.event_name === 'delete' }">
                 <td>
-                  <span class="rank-badge" :class="getRankClass(node.rank)">
+                  <span class="rank-badge" :class="getRankClass(node.rank)" :style="node.event_name === 'delete' ? 'opacity: 0.5' : ''">
                     {{ node.rank }}
                   </span>
                 </td>
-                <td class="name-cell">{{ node.name }}</td>
+                <td class="name-cell">
+                  <span :style="node.event_name === 'delete' ? 'text-decoration: line-through; opacity: 0.6' : ''">{{ node.name }}</span>
+                  <span v-if="node.event_name === 'delete'" class="deleted-badge">deleted {{ formatShortDate(node.version_date) }}</span>
+                </td>
                 <td>
                   <a
                     href="#"
@@ -1224,6 +1235,18 @@ export default defineComponent({
   color: #8a5a00;
 }
 
+.deleted-badge {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0.1em 0.45em;
+  border-radius: 4px;
+  font-size: 0.75em;
+  font-weight: 600;
+  background: #fde8e8;
+  color: #c0392b;
+  vertical-align: middle;
+}
+
 @media screen and (max-width: 600px) {
   .taxon-info-box__status {
     margin-left: 0;
@@ -1258,6 +1281,11 @@ export default defineComponent({
   .change-badge--name {
     background: #3d2a00;
     color: #ffd97a;
+  }
+
+  .deleted-badge {
+    background: #4a1a1a;
+    color: #ff8a80;
   }
 }
 </style>
