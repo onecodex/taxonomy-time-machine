@@ -162,6 +162,15 @@ EVENTS = [
         "event_name": "delete",
         "version_date": D2,
     },
+    # Rename of DeletedGenus *after* its child was deleted — should not appear in child's versions
+    {
+        "tax_id": "1000",
+        "name": "RenamedDeletedGenus",
+        "parent_id": "2",
+        "rank": "genus",
+        "event_name": "alter",
+        "version_date": D3,
+    },
     # Moved node: 2002 created under 2000, then moved to 2001 at D2
     {
         "tax_id": "2000",

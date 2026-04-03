@@ -233,18 +233,24 @@ class TimeMachine:
         changed"""
         _profile_start = time.perf_counter()
 
-        # TODO: handle deletions (example: 352463)
+        # Find deletion date for this taxon (if deleted)
+        own_events = self.get_events(tax_id=tax_id)
+        deletion_date = None
+        if own_events and own_events[-1].event_name == EventName.Delete:
+            deletion_date = own_events[-1].version_date
+
         events = self._get_all_events_recursive(tax_id=tax_id)
         version_dates = sorted({e.version_date for e in events})
+
+        # Don't show lineage changes that happened after this taxon was deleted
+        if deletion_date:
+            version_dates = [d for d in version_dates if d <= deletion_date]
 
         seen_lineages = set()
         versions_with_changes = []
 
         for version_date in version_dates:
             events = self.get_lineage(tax_id=tax_id, as_of=version_date)
-
-            # TODO: can a tax_id by deleted and created in the same version?
-            # TODO: can a tax_id be re-created after being deleted?
 
             key = tuple([(e.rank, e.tax_id, e.parent_id, e.name) for e in events])
 
@@ -256,6 +262,11 @@ class TimeMachine:
             if key not in seen_lineages:
                 versions_with_changes.append(version_date)
             seen_lineages.add(key)
+
+        # Always include the deletion date as a version point (for the timeline dot)
+        if deletion_date and deletion_date not in versions_with_changes:
+            versions_with_changes.append(deletion_date)
+            versions_with_changes.sort()
 
         self._profile("get_versions", _profile_start, time.perf_counter())
         return versions_with_changes
@@ -281,6 +292,17 @@ class TimeMachine:
                     break
 
             if parent is not None:
+                if parent.event_name == EventName.Delete:
+                    last_known = next((e for e in reversed(events) if e.name), None)
+                    if last_known:
+                        parent = Event(
+                            event_name=parent.event_name,
+                            tax_id=parent.tax_id,
+                            version_date=parent.version_date,
+                            name=last_known.name,
+                            rank=last_known.rank,
+                            parent_id=parent.parent_id,
+                        )
                 lineage.append(parent)
             else:
                 break

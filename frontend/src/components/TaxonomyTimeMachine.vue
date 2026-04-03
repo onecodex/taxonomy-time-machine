@@ -10,6 +10,7 @@ interface TaxonVersion {
   name: string | null;
   rank: string | null;
   version_date: string | null;
+  event_name?: string;
 }
 
 export default defineComponent({
@@ -50,6 +51,18 @@ export default defineComponent({
         month: "long",
         day: "numeric",
       });
+    };
+
+    const formatShortDate = (isoDate: string | null): string => {
+      if (!isoDate) return "";
+      const [year, month] = isoDate.slice(0, 7).split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return date.toLocaleDateString('en-US', { year: "numeric", month: "short" });
+    };
+
+    const formatYearMonth = (isoDate: string | null): string => {
+      if (!isoDate) return "";
+      return isoDate.slice(0, 7); // "YYYY-MM"
     };
 
     // ~~~~~~~~~~~~~~~~~~~
@@ -293,6 +306,11 @@ export default defineComponent({
 
       lineage.value = data || [];
 
+      if (!userIsTyping.value && lineage.value.length > 0) {
+        const name = lineage.value[lineage.value.length - 1].name;
+        if (name) query.value = name;
+      }
+
       if (lineage.value.some((item) => item.name === "Fungi")) {
         emoji.value = "🍄";
       } else if (lineage.value.some((item) => item.name === "Bacteria")) {
@@ -398,9 +416,32 @@ export default defineComponent({
       fetchCurrentTaxon();
     });
 
+
     // When taxId changes due to URL or navigation, reset userIsTyping so input box updates
     watch([taxId, version], () => {
       userIsTyping.value = false;
+    });
+
+    const taxonChanges = computed(() => {
+      if (!currentTaxon.value || !lineage.value.length) return null;
+      const historical = lineage.value[lineage.value.length - 1];
+      return {
+        nameChanged: currentTaxon.value.name !== historical.name,
+        lineageChanged:
+          currentTaxon.value.rank !== historical.rank ||
+          currentTaxon.value.parent_id !== historical.parent_id,
+      };
+    });
+
+    const isLatestVersion = computed(() => {
+      if (!version.value) return true;
+      if (versions.value.length === 0) return false;
+      const latest = versions.value.reduce((max, v) => {
+        if (!v.version_date) return max;
+        if (!max.version_date) return v;
+        return v.version_date > max.version_date ? v : max;
+      }, versions.value[0]);
+      return latest.version_date === version.value;
     });
 
     // Function to get CSS class for rank badges
@@ -440,6 +481,8 @@ export default defineComponent({
       setTaxId,
       formatDate,
       formatDisplayDate,
+      formatShortDate,
+      formatYearMonth,
       suggestions,
       loading,
       fetchSuggestions,
@@ -455,6 +498,8 @@ export default defineComponent({
       handleRandomSpecies,
       randomSpeciesLoading,
       currentTaxon,
+      taxonChanges,
+      isLatestVersion,
       getRankClass,
     };
   },
@@ -500,6 +545,7 @@ export default defineComponent({
           v-for="example in [
             'SARS-related coronavirus',
             'Bacteroides dorei',
+            'BK polyomavirus',
             'Lactobacillus reuteri',
             '[Candida] auris',
           ]"
@@ -568,27 +614,39 @@ export default defineComponent({
         </div>
       </div>
 
+      <!-- Current Taxon Info -->
+      <div
+        v-if="taxId && lineage.length && currentTaxon"
+        class="taxon-info-box"
+        :class="isLatestVersion ? 'taxon-info-box--latest' : 'taxon-info-box--historical'"
+      >
+        <span class="taxon-info-box__name">{{ lineage[lineage.length - 1].name }}</span>
+        <span class="taxon-info-box__id">tax ID {{ taxId }}</span>
+        <span class="taxon-info-box__status">
+          <template v-if="isLatestVersion">
+            Most recent version
+          </template>
+          <template v-else-if="currentTaxon.event_name === 'EventName.Delete'">
+            As of {{ formatDisplayDate(version) }} ·
+            <span class="change-badge change-badge--deleted">deleted on {{ formatYearMonth(currentTaxon.version_date) }}</span>
+          </template>
+          <template v-else-if="taxonChanges && (taxonChanges.nameChanged || taxonChanges.lineageChanged)">
+            As of {{ formatDisplayDate(version) }} ·
+            <span v-if="taxonChanges.lineageChanged" class="change-badge change-badge--lineage">reclassified</span>
+            <span v-if="taxonChanges.nameChanged" class="change-badge change-badge--name">renamed to <strong>{{ currentTaxon.name }}</strong></span>
+          </template>
+          <template v-else>
+            As of {{ formatDisplayDate(version) }} · no changes
+          </template>
+        </span>
+      </div>
+
       <!-- Timeline Component -->
-      <Timeline 
-        :versions="versions" 
+      <Timeline
+        :versions="versions"
         :current-version="version"
         @update-version="updateVersion"
       />
-
-      <!-- Current Taxon Info (moved above columns for better visibility) -->
-      <div
-        v-if="taxId && version && lineage.length && currentTaxon"
-        style="margin-bottom: 2em; margin-top: 1em"
-      >
-        <p class="current-taxon-summary">
-          Currently viewing the NCBI taxonomy for
-          <strong>{{ lineage[lineage.length - 1].name }}</strong>
-          ({{ taxId }}) from {{ formatDisplayDate(version) }}.<br />
-          The current name for this taxon is
-          <strong>{{ currentTaxon.name }}</strong
-          >.
-        </p>
-      </div>
 
       <!-- Lineage table -->
       <div v-if="!!lineage.length" class="taxonomy-section">
@@ -603,13 +661,16 @@ export default defineComponent({
               </tr>
             </thead>
             <tbody>
-              <tr v-for="node in lineage" :key="node.tax_id">
+              <tr v-for="node in lineage" :key="node.tax_id" :class="{ 'lineage-row--deleted': node.event_name === 'EventName.Delete' }">
                 <td>
-                  <span class="rank-badge" :class="getRankClass(node.rank)">
+                  <span class="rank-badge" :class="getRankClass(node.rank)" :style="node.event_name === 'EventName.Delete' ? 'opacity: 0.5' : ''">
                     {{ node.rank }}
                   </span>
                 </td>
-                <td class="name-cell">{{ node.name }}</td>
+                <td class="name-cell">
+                  <span :style="node.event_name === 'EventName.Delete' ? 'text-decoration: line-through; opacity: 0.6' : ''">{{ node.name }}</span>
+                  <span v-if="node.event_name === 'EventName.Delete'" class="deleted-badge">deleted {{ formatShortDate(node.version_date) }}</span>
+                </td>
                 <td>
                   <a
                     href="#"
@@ -1121,6 +1182,132 @@ export default defineComponent({
   .current-taxon-summary {
     font-size: 0.9rem;
     line-height: 1.4;
+  }
+}
+
+.taxon-info-box {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 8px;
+  border-left: 4px solid;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.taxon-info-box--latest {
+  background: #f0faf4;
+  border-color: #48c78e;
+}
+
+.taxon-info-box--historical {
+  background: #f5f7ff;
+  border-color: #7b8cde;
+}
+
+.taxon-info-box__name {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.taxon-info-box__id {
+  color: #666;
+  font-size: 0.85rem;
+  font-family: monospace;
+}
+
+.taxon-info-box__status {
+  color: #444;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.change-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.change-badge--lineage {
+  background: #e8e0ff;
+  color: #5a3fc0;
+}
+
+.change-badge--name {
+  background: #fff0d0;
+  color: #8a5a00;
+}
+
+.change-badge--deleted {
+  background: #fde8e8;
+  color: #c0392b;
+}
+
+.deleted-badge {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0.1em 0.45em;
+  border-radius: 4px;
+  font-size: 0.75em;
+  font-weight: 600;
+  background: #fde8e8;
+  color: #c0392b;
+  vertical-align: middle;
+}
+
+@media screen and (max-width: 600px) {
+  .taxon-info-box__status {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .taxon-info-box--latest {
+    background: #0d2b1e;
+    border-color: #48c78e;
+  }
+
+  .taxon-info-box--historical {
+    background: #161b35;
+    border-color: #7b8cde;
+  }
+
+  .taxon-info-box__id {
+    color: #aaa;
+  }
+
+  .taxon-info-box__status {
+    color: #ccc;
+  }
+
+  .change-badge--lineage {
+    background: #2e1f6e;
+    color: #c4aaff;
+  }
+
+  .change-badge--name {
+    background: #3d2a00;
+    color: #ffd97a;
+  }
+
+  .change-badge--deleted {
+    background: #4a1a1a;
+    color: #ff8a80;
+  }
+
+  .deleted-badge {
+    background: #4a1a1a;
+    color: #ff8a80;
   }
 }
 </style>
