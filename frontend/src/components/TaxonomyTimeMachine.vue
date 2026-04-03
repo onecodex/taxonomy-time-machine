@@ -59,6 +59,11 @@ export default defineComponent({
       return date.toLocaleDateString(undefined, { year: "numeric", month: "short" });
     };
 
+    const formatYearMonth = (isoDate: string | null): string => {
+      if (!isoDate) return "";
+      return isoDate.slice(0, 7); // "YYYY-MM"
+    };
+
     // ~~~~~~~~~~~~~~~~~~~
     // reactive properties
     // ~~~~~~~~~~~~~~~~~~~
@@ -476,6 +481,7 @@ export default defineComponent({
       formatDate,
       formatDisplayDate,
       formatShortDate,
+      formatYearMonth,
       suggestions,
       loading,
       fetchSuggestions,
@@ -617,6 +623,10 @@ export default defineComponent({
         <span class="taxon-info-box__status">
           <template v-if="isLatestVersion">
             Most recent version
+          </template>
+          <template v-else-if="currentTaxon.event_name === 'delete'">
+            As of {{ formatDisplayDate(version) }} ·
+            <span class="change-badge change-badge--deleted">deleted on {{ formatYearMonth(currentTaxon.version_date) }}</span>
           </template>
           <template v-else-if="taxonChanges && (taxonChanges.nameChanged || taxonChanges.lineageChanged)">
             As of {{ formatDisplayDate(version) }} ·
@@ -1235,6 +1245,11 @@ export default defineComponent({
   color: #8a5a00;
 }
 
+.change-badge--deleted {
+  background: #fde8e8;
+  color: #c0392b;
+}
+
 .deleted-badge {
   display: inline-block;
   margin-left: 0.5em;
@@ -1281,6 +1296,11 @@ export default defineComponent({
   .change-badge--name {
     background: #3d2a00;
     color: #ffd97a;
+  }
+
+  .change-badge--deleted {
+    background: #4a1a1a;
+    color: #ff8a80;
   }
 
   .deleted-badge {
