@@ -624,7 +624,7 @@ export default defineComponent({
           <template v-if="isLatestVersion">
             Most recent version
           </template>
-          <template v-else-if="currentTaxon.event_name === 'delete'">
+          <template v-else-if="currentTaxon.event_name === 'EventName.Delete'">
             As of {{ formatDisplayDate(version) }} ·
             <span class="change-badge change-badge--deleted">deleted on {{ formatYearMonth(currentTaxon.version_date) }}</span>
           </template>
@@ -659,15 +659,15 @@ export default defineComponent({
               </tr>
             </thead>
             <tbody>
-              <tr v-for="node in lineage" :key="node.tax_id" :class="{ 'lineage-row--deleted': node.event_name === 'delete' }">
+              <tr v-for="node in lineage" :key="node.tax_id" :class="{ 'lineage-row--deleted': node.event_name === 'EventName.Delete' }">
                 <td>
-                  <span class="rank-badge" :class="getRankClass(node.rank)" :style="node.event_name === 'delete' ? 'opacity: 0.5' : ''">
+                  <span class="rank-badge" :class="getRankClass(node.rank)" :style="node.event_name === 'EventName.Delete' ? 'opacity: 0.5' : ''">
                     {{ node.rank }}
                   </span>
                 </td>
                 <td class="name-cell">
-                  <span :style="node.event_name === 'delete' ? 'text-decoration: line-through; opacity: 0.6' : ''">{{ node.name }}</span>
-                  <span v-if="node.event_name === 'delete'" class="deleted-badge">deleted {{ formatShortDate(node.version_date) }}</span>
+                  <span :style="node.event_name === 'EventName.Delete' ? 'text-decoration: line-through; opacity: 0.6' : ''">{{ node.name }}</span>
+                  <span v-if="node.event_name === 'EventName.Delete'" class="deleted-badge">deleted {{ formatShortDate(node.version_date) }}</span>
                 </td>
                 <td>
                   <a
