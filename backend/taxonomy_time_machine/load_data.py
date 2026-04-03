@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
-from collections import Counter
-from tqdm import tqdm
-import taxonomy
-from datetime import datetime
 import argparse
+from collections import Counter
+from datetime import datetime
+from pathlib import Path
 
-import sqlite3
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+from taxonomy import Taxonomy
+from tqdm import tqdm
 
-from models import Event, EventName
+from .event import Event, EventName
+from . import TimeMachine
+from .models import (
+    TaxonomySource,
+    Taxonomy as TaxonomyModel,
+)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--always-insert",
-        action="store_true",
-        default=False,
-        help="Always insert nodes instead of only inserting deltas",
+        "--db-path",
+        required=True,
+        type=str,
+        help="path to output sqlite database",
     )
-    parser.add_argument("--db-path", required=True, type=str, help="path to output sqltie database")
+    parser.add_argument("--dumps-dir", default="dumps")
     return parser.parse_args()
 
 
@@ -28,16 +34,62 @@ def dump_path_to_datetime(dump_path: Path) -> datetime:
     return datetime.strptime(dump_path.name.split("_")[1], "%Y-%m-%d")
 
 
+def load_current_tax_id_to_node(database_path: str) -> dict[str, Event]:
+    """Load current tax ID to node state"""
+
+    return TimeMachine(database_path=database_path).get_most_recent_events()
+
+
+def setup_sqlite_performance(engine):
+    """Optimize SQLite for bulk inserts"""
+    with engine.connect() as conn:
+        conn.execute(text("PRAGMA synchronous = OFF"))
+        conn.execute(text("PRAGMA journal_mode = MEMORY"))
+        conn.execute(text("PRAGMA temp_store = MEMORY"))
+        conn.commit()
+
+
 def main() -> None:
     args = parse_args()
 
-    taxdumps = sorted(
-        [p for p in Path("dumps").glob("*") if p.is_dir()],
+    # Create SQLAlchemy engine and session
+    engine = create_engine(f"sqlite:///{args.db_path}")
+    Session = sessionmaker(bind=engine)
+
+    # stores the *last* state of a Tax ID
+    # used to determine if a tax ID has changed
+    tax_id_to_node: dict[str, Event]
+
+    tax_id_to_node = load_current_tax_id_to_node(args.db_path)
+
+    # Optimize SQLite for bulk inserts
+    setup_sqlite_performance(engine)
+
+    taxdump_paths = sorted(
+        [p for p in Path(args.dumps_dir).glob("*") if p.is_dir()],
         key=dump_path_to_datetime,
     )
 
+    paths_to_import = []
+
+    with Session() as session:
+        for taxdump_path in taxdump_paths:
+            count = (
+                session.query(TaxonomySource)
+                .filter(TaxonomySource.path == str(taxdump_path))
+                .count()
+            )
+
+            if not count:
+                paths_to_import.append(taxdump_path)
+            else:
+                print(f"Skipping {taxdump_path} [already imported]")
+
     n_events = 0
-    tax_id_to_node: dict = {}
+
+    print(f"Found {len(tax_id_to_node):,} existing taxonomy versions")
+    print(f"Importing from {len(paths_to_import):,} of {len(taxdump_paths):,} taxdumps")
+
     data_to_insert: list[dict] = []
     last_tax_ids: None | set[str] = None
 
@@ -45,11 +97,17 @@ def main() -> None:
 
     last_tax = None
 
-    for n, taxdump in enumerate(taxdumps):
-        taxdump_date = dump_path_to_datetime(taxdump)
+    for n, taxdump_path in enumerate(tqdm(paths_to_import, colour="green")):
+        taxdump_date = dump_path_to_datetime(taxdump_path)
 
-        tax = taxonomy.Taxonomy.from_ncbi(str(taxdump))
-        print(f"--- loaded {taxdump}: {tax}")
+        with Session() as session:
+            taxonomy_source = TaxonomySource(path=str(taxdump_path), version_date=taxdump_date)
+            session.add(taxonomy_source)
+            session.commit()
+            taxonomy_source_id = taxonomy_source.id
+
+        tax = Taxonomy.from_ncbi(str(taxdump_path))
+        tqdm.write(f"--- loaded {taxdump_path}: {tax}")
 
         total_seen_taxa += len(tax)
 
@@ -67,6 +125,7 @@ def main() -> None:
 
             event = None
 
+            # node isn't in tax_id_to_node -- it must be new
             if from_node is None:
                 event = Event(
                     event_name=EventName.Create,
@@ -75,14 +134,13 @@ def main() -> None:
                     name=to_node.name,
                     parent_id=to_node.parent,
                     version_date=taxdump_date,
+                    taxonomy_source_id=taxonomy_source_id,
                 )
-            elif args.always_insert or (
-                (from_node.parent, from_node.rank, from_node.name)
-                != (
-                    to_node.parent,
-                    to_node.rank,
-                    to_node.name,
-                )
+            # *something* changed
+            elif (from_node.parent_id, from_node.rank, from_node.name) != (
+                to_node.parent,
+                to_node.rank,
+                to_node.name,
             ):
                 event = Event(
                     event_name=EventName.Update,
@@ -91,13 +149,13 @@ def main() -> None:
                     name=to_node.name,
                     parent_id=to_node.parent,
                     version_date=taxdump_date,
+                    taxonomy_source_id=taxonomy_source_id,
                 )
 
             if event is not None:
+                tax_id_to_node[tax_id] = event
                 events.append(event)
                 n_new_events += 1
-
-            tax_id_to_node[tax_id] = to_node
 
         # find all the deleted nodes
 
@@ -113,11 +171,12 @@ def main() -> None:
                         # taxonomy library type annotation is wrong?
                         parent_id=last_tax[tax_id].parent if last_tax else None,  # mypy: ignore
                         version_date=taxdump_date,
+                        taxonomy_source_id=taxonomy_source_id,
                     )
                 )
 
                 # remove from tax_id_to_node in case this tax ID gets re-created
-                tax_id_to_node[tax_id] = None
+                del tax_id_to_node[tax_id]
         last_tax_ids = seen_tax_ids
 
         for event in events:
@@ -125,84 +184,56 @@ def main() -> None:
             data_to_insert.append(event.to_dict())
             n_events += 1
 
-        print(f"{n}/{len(taxdumps)} total_events={n_events:,} n_new_events={n_new_events:,}")
+        tqdm.write(
+            f"{n}/{len(taxdump_paths)} total_events={n_events:,} n_new_events={n_new_events:,}"
+        )
 
         for event_name, count in event_counts.items():
-            print(f"    {event_name.value:>10} -> {count:,}")
+            tqdm.write(f"    {event_name.value:>10} -> {count:,}")
 
-        print()
-        # TODO: can probably clean up a lot of this code by just using `last_tax`
         last_tax = tax
+
+    print(Counter([event["event_name"] for event in data_to_insert]))
 
     print(f"--- {total_seen_taxa=:,}")
     print(f"--- {len(data_to_insert)=:,}")
-    print(f"--- savings={1 - (len(data_to_insert) / total_seen_taxa):.2%}")
 
-    # TODO: write to sqlite while parsing to avoid having to store all taxonomy
-    # nodes in memory...
-
-    # Connect to the SQLite database
-    conn = sqlite3.connect(args.db_path)
-    cursor = conn.cursor()
-
-    # Optimized PRAGMA settings for faster inserts
-    cursor.execute("PRAGMA synchronous = OFF;")
-    cursor.execute("PRAGMA journal_mode = MEMORY;")
-    cursor.execute("PRAGMA temp_store = MEMORY;")
-
-    # Create table
-    # We use TEXT for tax_id and parent_id to support non-NCBI taxonomies such
-    # as GTDB-Tk which lack IDs
-    # (you can use the name as the ID)
-    cursor.execute("""
-    CREATE TABLE taxonomy (
-        event_name TEXT,
-        version_date DATETIME,
-        tax_id TEXT,
-        parent_id TEXT,
-        rank TEXT,
-        name TEXT
-    )
-    """)
+    if total_seen_taxa > 0:
+        print(f"--- savings={1 - (len(data_to_insert) / total_seen_taxa):.2%}")
 
     batch_size = 10_000
 
-    # Loop through data in batches to avoid memory overload
-    # Batch insert using transactions and executemany
-    for i in tqdm(range(0, len(data_to_insert), batch_size)):
-        batch = data_to_insert[i : i + batch_size]
-        cursor.executemany(
-            """
-            INSERT INTO taxonomy (event_name, version_date, tax_id, parent_id, rank, name)
-            VALUES (:event_name, :version_date, :tax_id, :parent_id, :rank, :name)
-        """,
-            batch,
-        )
-
-    conn.commit()
-
-    print("--- creating b-tree indexes")
-    cursor.execute("CREATE INDEX idx_tax_id ON taxonomy (tax_id);")
-    cursor.execute("CREATE INDEX idx_parent_id ON taxonomy (parent_id);")
-
-    # index the lowercase of `name` to speed up case-insensitive searches
-    # like lower(name) = lower('query');
-    cursor.execute("CREATE INDEX idx_name ON taxonomy (lower(name));")
-    cursor.execute("CREATE INDEX idx_tax_id_version_date ON taxonomy (tax_id, version_date);")
-    cursor.execute("CREATE INDEX idx_name_version_date ON taxonomy (name, version_date);")
-
-    # Full Text Search (FTS) index
-    print("--- creating full text index")
-    cursor.execute("CREATE VIRTUAL TABLE name_fts USING fts5(name);")
-    cursor.execute("INSERT INTO name_fts (name) SELECT name FROM taxonomy;")
-
-    conn.commit()
+    # Batch insert using SQLAlchemy bulk operations
+    with Session() as session:
+        for i in tqdm(range(0, len(data_to_insert), batch_size)):
+            batch = data_to_insert[i : i + batch_size]
+            taxonomy_objects = [
+                TaxonomyModel(
+                    event_name=item["event_name"],
+                    version_date=item["version_date"],
+                    tax_id=item["tax_id"],
+                    parent_id=item["parent_id"],
+                    rank=item["rank"],
+                    name=item["name"],
+                    taxonomy_source_id=item["taxonomy_source_id"],
+                )
+                for item in batch
+            ]
+            session.bulk_save_objects(taxonomy_objects)
+            session.commit()
 
     print("--- wrapping up")
-    # cursor.execute("PRAGMA synchronous = FULL;")
-    # cursor.execute("PRAGMA journal_mode = DELETE;")
 
-    conn.close()
+    with Session() as session:
+        count = session.query(TaxonomyModel).count()
+        print(f"taxonomy version table now has {count:,} rows")
+
+    print("--- rebuilding FTS index")
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM name_fts"))
+        conn.execute(text("INSERT INTO name_fts(name) SELECT DISTINCT name FROM taxonomy WHERE name IS NOT NULL"))
+        conn.commit()
+    print("--- done")
 
 
 if __name__ == "__main__":

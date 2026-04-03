@@ -1,14 +1,14 @@
-from taxonomy_time_machine.models import Taxonomy
-from datetime import datetime
-
 import os
 import random
-from flask import Flask, g
-from flask.views import MethodView
-import marshmallow as ma
-from flask_smorest import Api, Blueprint
-from flask_cors import CORS
 import threading
+
+import marshmallow as ma
+from flask import Flask
+from flask.views import MethodView
+from flask_cors import CORS
+from flask_smorest import Api, Blueprint
+
+from taxonomy_time_machine import TimeMachine
 
 app = Flask(__name__)
 
@@ -33,7 +33,10 @@ app.config["OPENAPI_REDOC_URL"] = (
 if not os.environ.get("FLASK_DEBUG"):
     app.config["API_SPEC_OPTIONS"] = {
         "servers": [
-            {"url": "https://taxonomy.onecodex.com/api", "description": "Production server"}
+            {
+                "url": "https://taxonomy.onecodex.com/api",
+                "description": "Production server",
+            }
         ]
     }
 
@@ -42,7 +45,12 @@ api = Api(app)
 # TODO: we can cut down on the number of DB queries by fetching the events
 # first and then filtering them ...
 
-blp = Blueprint("taxonomy", "taxonomy", url_prefix="/", description="Taxonomy Time Machine API")
+blp = Blueprint(
+    "taxonomy",
+    "taxonomy",
+    url_prefix="/",
+    description="Taxonomy Time Machine API",
+)
 
 DATABASE_PATH = os.environ.get("DATABASE_PATH", "events.db")
 
@@ -52,13 +60,16 @@ _local = threading.local()
 
 def get_taxonomy():
     if not hasattr(_local, "taxonomy"):
-        _local.taxonomy = Taxonomy(database_path=DATABASE_PATH)
+        _local.taxonomy = TimeMachine(database_path=DATABASE_PATH)
     return _local.taxonomy
 
 
 class QueryArgsSchema(ma.Schema):
     query = ma.fields.String(
-        metadata={"description": "Search term (taxon name or ID)", "example": "Bacteroides dorei"}
+        metadata={
+            "description": "Search term (taxon name or ID)",
+            "example": "Bacteroides dorei",
+        }
     )
 
 
@@ -78,7 +89,7 @@ class ChildrenQuerySchema(ma.Schema):
     )
 
     @ma.pre_load
-    def coerce_empty_to_none(self, data, **kwargs):
+    def coerce_empty_to_none(self, data, **_):
         data = data.copy()
         for key, value in data.items():
             if value == "":
@@ -94,10 +105,14 @@ class TaxonSchema(ma.Schema):
     rank = ma.fields.String(metadata={"description": "Taxonomic rank", "example": "species"})
     tax_id = ma.fields.String(metadata={"description": "NCBI Taxonomy ID", "example": "9606"})
     parent_id = ma.fields.String(
-        allow_none=True, metadata={"description": "Parent taxon ID", "example": "9605"}
+        allow_none=True,
+        metadata={"description": "Parent taxon ID", "example": "9605"},
     )
     version_date = ma.fields.NaiveDateTime(
-        metadata={"description": "ISO8601-formatted datetime", "example": "2014-08-01T00:00:00"}
+        metadata={
+            "description": "ISO8601-formatted datetime",
+            "example": "2014-08-01T00:00:00",
+        }
     )
 
 
@@ -171,7 +186,7 @@ class Versions(MethodView):
     @blp.response(200, VersionSchema(many=True))
     def get(self, args):
         """Return all available database versions where the given tax ID appears"""
-        db = Taxonomy(database_path=DATABASE_PATH)
+        db = get_taxonomy()
         tax_id = args.get("tax_id")
         versions = db.get_versions(tax_id=tax_id)
         if tax_id:
