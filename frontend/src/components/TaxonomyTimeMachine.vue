@@ -545,6 +545,7 @@ export default defineComponent({
           v-for="example in [
             'SARS-related coronavirus',
             'Bacteroides dorei',
+            'BK polyomavirus',
             'Lactobacillus reuteri',
             '[Candida] auris',
           ]"
