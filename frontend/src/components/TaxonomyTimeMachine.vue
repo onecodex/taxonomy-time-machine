@@ -293,6 +293,11 @@ export default defineComponent({
 
       lineage.value = data || [];
 
+      if (!userIsTyping.value && lineage.value.length > 0) {
+        const name = lineage.value[lineage.value.length - 1].name;
+        if (name) query.value = name;
+      }
+
       if (lineage.value.some((item) => item.name === "Fungi")) {
         emoji.value = "🍄";
       } else if (lineage.value.some((item) => item.name === "Bacteria")) {
@@ -333,6 +338,15 @@ export default defineComponent({
       const url = `${apiBase}/versions?tax_id=${encodeURIComponent(taxId.value)}`;
       const data = await apiFetchWithCache(url);
       versions.value = data || [];
+
+      if (!version.value && versions.value.length > 0) {
+        const latest = versions.value.reduce((max, v) => {
+          if (!v.version_date) return max;
+          if (!max.version_date) return v;
+          return v.version_date > max.version_date ? v : max;
+        }, versions.value[0]);
+        if (latest.version_date) version.value = latest.version_date;
+      }
     };
 
     const updateTaxId = (argTaxId: string) => {
@@ -403,6 +417,16 @@ export default defineComponent({
       userIsTyping.value = false;
     });
 
+    const isLatestVersion = computed(() => {
+      if (!version.value || versions.value.length === 0) return false;
+      const latest = versions.value.reduce((max, v) => {
+        if (!v.version_date) return max;
+        if (!max.version_date) return v;
+        return v.version_date > max.version_date ? v : max;
+      }, versions.value[0]);
+      return latest.version_date === version.value;
+    });
+
     // Function to get CSS class for rank badges
     const getRankClass = (rank: string | null): string => {
       if (!rank) return "rank-default";
@@ -455,6 +479,7 @@ export default defineComponent({
       handleRandomSpecies,
       randomSpeciesLoading,
       currentTaxon,
+      isLatestVersion,
       getRankClass,
     };
   },
@@ -581,12 +606,19 @@ export default defineComponent({
         style="margin-bottom: 2em; margin-top: 1em"
       >
         <p class="current-taxon-summary">
-          Currently viewing the NCBI taxonomy for
-          <strong>{{ lineage[lineage.length - 1].name }}</strong>
-          ({{ taxId }}) from {{ formatDisplayDate(version) }}.<br />
-          The current name for this taxon is
-          <strong>{{ currentTaxon.name }}</strong
-          >.
+          Viewing <strong>{{ lineage[lineage.length - 1].name }}</strong> ({{ taxId }})
+          <template v-if="isLatestVersion">
+            — this is the most recent version.
+          </template>
+          <template v-else>
+            as of {{ formatDisplayDate(version) }}
+            <template v-if="currentTaxon && currentTaxon.name === lineage[lineage.length - 1].name">
+              — the name hasn't changed.
+            </template>
+            <template v-else>
+              — currently known as <strong>{{ currentTaxon.name }}</strong>.
+            </template>
+          </template>
         </p>
       </div>
 
