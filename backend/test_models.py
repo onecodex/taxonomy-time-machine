@@ -133,6 +133,25 @@ def test_get_versions(db):
     assert len(lineages) == len(set(lineages))
 
 
+def test_get_versions_deleted_node_stops_at_deletion(db):
+    # 1001 was deleted at D2; its parent was renamed at D3
+    # versions should not include D3 or later
+    versions = db.get_versions("1001")
+    assert all(v <= D2 for v in versions), f"Expected no versions after D2, got {versions}"
+
+
+def test_get_versions_deleted_node_includes_deletion_date(db):
+    # D2 is the deletion date and must always appear as a dot on the timeline
+    versions = db.get_versions("1001")
+    assert D2 in versions, f"Expected deletion date D2 in versions, got {versions}"
+
+
+def test_get_versions_deleted_node_includes_creation(db):
+    # D1 is when 1001 was created — should still appear
+    versions = db.get_versions("1001")
+    assert D1 in versions, f"Expected creation date D1 in versions, got {versions}"
+
+
 def test_get_children(db):
     children = db.get_children(tax_id="3000")
     assert children
