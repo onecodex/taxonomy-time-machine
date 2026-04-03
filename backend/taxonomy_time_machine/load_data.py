@@ -36,7 +36,7 @@ def dump_path_to_datetime(dump_path: Path) -> datetime:
 def load_current_tax_id_to_node(database_path: str) -> dict[str, Event]:
     """Load current tax ID to node state"""
 
-    return TimeMachine(database_path=database_path).iter_most_recent_events()
+    return TimeMachine(database_path=database_path).get_most_recent_events()
 
 
 def setup_sqlite_performance(engine):
@@ -58,16 +58,14 @@ def main() -> None:
     # stores the *last* state of a Tax ID
     # used to determine if a tax ID has changed
     tax_id_to_node: dict[str, Event]
-    try:
-        tax_id_to_node = load_current_tax_id_to_node(args.db_path)
-    except Exception:  # table doesn't exist yet... starting from scratch
-        tax_id_to_node = {}
+
+    tax_id_to_node = load_current_tax_id_to_node(args.db_path)
 
     # Optimize SQLite for bulk inserts
     setup_sqlite_performance(engine)
 
     taxdump_paths = sorted(
-        [p for p in Path("dumps").glob("*") if p.is_dir()],
+        [p for p in Path(args.dumps_dir).glob("*") if p.is_dir()],
         key=dump_path_to_datetime,
     )
 
@@ -80,12 +78,16 @@ def main() -> None:
                 .filter(TaxonomySource.path == str(taxdump_path))
                 .count()
             )
+
             if not count:
                 paths_to_import.append(taxdump_path)
+            else:
+                print(f"Skipping {taxdump_path} [already imported]")
 
     n_events = 0
 
     print(f"Found {len(tax_id_to_node):,} existing taxonomy versions")
+    print(f"Importing from {len(paths_to_import):,} of {len(taxdump_paths):,} taxdumps")
 
     data_to_insert: list[dict] = []
     last_tax_ids: None | set[str] = None

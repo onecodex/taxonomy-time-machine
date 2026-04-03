@@ -223,7 +223,7 @@ class TimeMachine:
 
     def get_all_events_recursive(self, tax_id: str) -> list[Event]:
         _profile_start = time.perf_counter()
-        result = _get_all_events_recursive(db=self, tax_id=tax_id)
+        result = self._get_all_events_recursive(tax_id=tax_id)
         self._profile("get_all_events_recursive", _profile_start, time.perf_counter())
         return result
 
@@ -234,8 +234,7 @@ class TimeMachine:
         _profile_start = time.perf_counter()
 
         # TODO: handle deletions (example: 352463)
-
-        events = _get_all_events_recursive(db=self, tax_id=tax_id)
+        events = self._get_all_events_recursive(tax_id=tax_id)
         version_dates = sorted({e.version_date for e in events})
 
         seen_lineages = set()
@@ -294,10 +293,9 @@ class TimeMachine:
         self._profile("get_lineage", _profile_start, time.perf_counter())
         return lineage
 
-    def iter_most_recent_events(self) -> dict[str, Event]:
+    def get_most_recent_events(self) -> dict[str, Event]:
         """Get the most recent event (version) for each Tax ID in the database"""
 
-        print("fetching most recent versions")
         rows = self.cursor.execute("""
         SELECT * FROM taxonomy t1
         WHERE t1.version_date = (
