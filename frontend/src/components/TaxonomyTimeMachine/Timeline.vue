@@ -58,7 +58,7 @@ const timelineData = computed(() => {
     return {
       ...version,
       position,
-      labelPosition: position, // Start with same position as dot
+      labelPosition: position,
       isActive: version.version_date === props.currentVersion,
       isFirst: index === 0,
       isLast: index === sortedVersions.value.length - 1,

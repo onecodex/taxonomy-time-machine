@@ -338,15 +338,6 @@ export default defineComponent({
       const url = `${apiBase}/versions?tax_id=${encodeURIComponent(taxId.value)}`;
       const data = await apiFetchWithCache(url);
       versions.value = data || [];
-
-      if (!version.value && versions.value.length > 0) {
-        const latest = versions.value.reduce((max, v) => {
-          if (!v.version_date) return max;
-          if (!max.version_date) return v;
-          return v.version_date > max.version_date ? v : max;
-        }, versions.value[0]);
-        if (latest.version_date) version.value = latest.version_date;
-      }
     };
 
     const updateTaxId = (argTaxId: string) => {
@@ -412,13 +403,26 @@ export default defineComponent({
       fetchCurrentTaxon();
     });
 
+
     // When taxId changes due to URL or navigation, reset userIsTyping so input box updates
     watch([taxId, version], () => {
       userIsTyping.value = false;
     });
 
+    const taxonChanges = computed(() => {
+      if (!currentTaxon.value || !lineage.value.length) return null;
+      const historical = lineage.value[lineage.value.length - 1];
+      return {
+        nameChanged: currentTaxon.value.name !== historical.name,
+        lineageChanged:
+          currentTaxon.value.rank !== historical.rank ||
+          currentTaxon.value.parent_id !== historical.parent_id,
+      };
+    });
+
     const isLatestVersion = computed(() => {
-      if (!version.value || versions.value.length === 0) return false;
+      if (!version.value) return true;
+      if (versions.value.length === 0) return false;
       const latest = versions.value.reduce((max, v) => {
         if (!v.version_date) return max;
         if (!max.version_date) return v;
@@ -479,6 +483,7 @@ export default defineComponent({
       handleRandomSpecies,
       randomSpeciesLoading,
       currentTaxon,
+      taxonChanges,
       isLatestVersion,
       getRankClass,
     };
@@ -593,34 +598,35 @@ export default defineComponent({
         </div>
       </div>
 
+      <!-- Current Taxon Info -->
+      <div
+        v-if="taxId && lineage.length && currentTaxon"
+        class="taxon-info-box"
+        :class="isLatestVersion ? 'taxon-info-box--latest' : 'taxon-info-box--historical'"
+      >
+        <span class="taxon-info-box__name">{{ lineage[lineage.length - 1].name }}</span>
+        <span class="taxon-info-box__id">tax ID {{ taxId }}</span>
+        <span class="taxon-info-box__status">
+          <template v-if="isLatestVersion">
+            Most recent version
+          </template>
+          <template v-else-if="taxonChanges && (taxonChanges.nameChanged || taxonChanges.lineageChanged)">
+            As of {{ formatDisplayDate(version) }} ·
+            <span v-if="taxonChanges.lineageChanged" class="change-badge change-badge--lineage">reclassified</span>
+            <span v-if="taxonChanges.nameChanged" class="change-badge change-badge--name">renamed to <strong>{{ currentTaxon.name }}</strong></span>
+          </template>
+          <template v-else>
+            As of {{ formatDisplayDate(version) }} · no changes
+          </template>
+        </span>
+      </div>
+
       <!-- Timeline Component -->
-      <Timeline 
-        :versions="versions" 
+      <Timeline
+        :versions="versions"
         :current-version="version"
         @update-version="updateVersion"
       />
-
-      <!-- Current Taxon Info (moved above columns for better visibility) -->
-      <div
-        v-if="taxId && version && lineage.length && currentTaxon"
-        style="margin-bottom: 2em; margin-top: 1em"
-      >
-        <p class="current-taxon-summary">
-          Viewing <strong>{{ lineage[lineage.length - 1].name }}</strong> ({{ taxId }})
-          <template v-if="isLatestVersion">
-            — this is the most recent version.
-          </template>
-          <template v-else>
-            as of {{ formatDisplayDate(version) }}
-            <template v-if="currentTaxon && currentTaxon.name === lineage[lineage.length - 1].name">
-              — the name hasn't changed.
-            </template>
-            <template v-else>
-              — currently known as <strong>{{ currentTaxon.name }}</strong>.
-            </template>
-          </template>
-        </p>
-      </div>
 
       <!-- Lineage table -->
       <div v-if="!!lineage.length" class="taxonomy-section">
@@ -1153,6 +1159,105 @@ export default defineComponent({
   .current-taxon-summary {
     font-size: 0.9rem;
     line-height: 1.4;
+  }
+}
+
+.taxon-info-box {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 8px;
+  border-left: 4px solid;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.taxon-info-box--latest {
+  background: #f0faf4;
+  border-color: #48c78e;
+}
+
+.taxon-info-box--historical {
+  background: #f5f7ff;
+  border-color: #7b8cde;
+}
+
+.taxon-info-box__name {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.taxon-info-box__id {
+  color: #666;
+  font-size: 0.85rem;
+  font-family: monospace;
+}
+
+.taxon-info-box__status {
+  color: #444;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.change-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.change-badge--lineage {
+  background: #e8e0ff;
+  color: #5a3fc0;
+}
+
+.change-badge--name {
+  background: #fff0d0;
+  color: #8a5a00;
+}
+
+@media screen and (max-width: 600px) {
+  .taxon-info-box__status {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .taxon-info-box--latest {
+    background: #0d2b1e;
+    border-color: #48c78e;
+  }
+
+  .taxon-info-box--historical {
+    background: #161b35;
+    border-color: #7b8cde;
+  }
+
+  .taxon-info-box__id {
+    color: #aaa;
+  }
+
+  .taxon-info-box__status {
+    color: #ccc;
+  }
+
+  .change-badge--lineage {
+    background: #2e1f6e;
+    color: #c4aaff;
+  }
+
+  .change-badge--name {
+    background: #3d2a00;
+    color: #ffd97a;
   }
 }
 </style>
