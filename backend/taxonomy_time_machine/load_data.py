@@ -24,8 +24,9 @@ def parse_args():
         "--db-path",
         required=True,
         type=str,
-        help="path to output sqltie database",
+        help="path to output sqlite database",
     )
+    parser.add_argument("--dumps-dir", default="dumps")
     return parser.parse_args()
 
 
@@ -96,7 +97,7 @@ def main() -> None:
 
     last_tax = None
 
-    for n, taxdump_path in enumerate(paths_to_import):
+    for n, taxdump_path in enumerate(tqdm(paths_to_import, colour="green")):
         taxdump_date = dump_path_to_datetime(taxdump_path)
 
         with Session() as session:
@@ -106,7 +107,7 @@ def main() -> None:
             taxonomy_source_id = taxonomy_source.id
 
         tax = Taxonomy.from_ncbi(str(taxdump_path))
-        print(f"--- loaded {taxdump_path}: {tax}")
+        tqdm.write(f"--- loaded {taxdump_path}: {tax}")
 
         total_seen_taxa += len(tax)
 
@@ -183,19 +184,22 @@ def main() -> None:
             data_to_insert.append(event.to_dict())
             n_events += 1
 
-        print(f"{n}/{len(taxdump_paths)} total_events={n_events:,} n_new_events={n_new_events:,}")
+        tqdm.write(
+            f"{n}/{len(taxdump_paths)} total_events={n_events:,} n_new_events={n_new_events:,}"
+        )
 
         for event_name, count in event_counts.items():
-            print(f"    {event_name.value:>10} -> {count:,}")
+            tqdm.write(f"    {event_name.value:>10} -> {count:,}")
 
-        print()
         last_tax = tax
 
     print(Counter([event["event_name"] for event in data_to_insert]))
 
     print(f"--- {total_seen_taxa=:,}")
     print(f"--- {len(data_to_insert)=:,}")
-    print(f"--- savings={1 - (len(data_to_insert) / total_seen_taxa):.2%}")
+
+    if total_seen_taxa > 0:
+        print(f"--- savings={1 - (len(data_to_insert) / total_seen_taxa):.2%}")
 
     batch_size = 10_000
 

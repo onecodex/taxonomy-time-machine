@@ -42,9 +42,8 @@ relic.
 # in backend/
 
 # install python dependencies
-uv venv --seed
-. venv/bin/activate
-uv pip install
+uv venv
+uv sync
 
 # fetch data, create events.db
 make

@@ -16,7 +16,7 @@ class Event:
     event_name: EventName
     tax_id: str
     version_date: datetime
-    taxonomy_source_id: int
+    taxonomy_source_id: int | None = None
     name: str | None = None
     rank: str | None = None
     parent_id: str | None = None
@@ -35,7 +35,7 @@ class Event:
             name=data.get("name"),
             rank=data.get("rank"),
             parent_id=data.get("parent_id"),
-            taxonomy_source_id=data["taxonomy_source_id"],
+            taxonomy_source_id=data.get("taxonomy_source_id"),
         )
 
     def to_dict(self) -> dict:
