@@ -185,6 +185,7 @@ export default defineComponent({
         const url = `${apiBase}/search?query=${encodeURIComponent(query.value || "")}`;
         const data = await apiFetchWithCache(url);
         suggestions.value = data;
+        highlightedIndex.value = -1;
       } catch (err) {
         console.error(err);
         error.value = "Failed to fetch suggestions.";
@@ -222,7 +223,14 @@ export default defineComponent({
         highlightedIndex.value < suggestions.value.length
       ) {
         selectSuggestion(suggestions.value[highlightedIndex.value]);
+      } else {
+        setTaxId();
       }
+    };
+
+    const closeSuggestions = () => {
+      suggestions.value = [];
+      highlightedIndex.value = -1;
     };
 
     const highlightIndex = (index: number) => {
@@ -442,6 +450,7 @@ export default defineComponent({
       highlightPrev,
       selectHighlighted,
       highlightedIndex,
+      closeSuggestions,
       handleExampleClick,
       handleRandomSpecies,
       randomSpeciesLoading,
@@ -526,6 +535,7 @@ export default defineComponent({
               @keydown.down.prevent="highlightNext"
               @keydown.up.prevent="highlightPrev"
               @keydown.enter.prevent="selectHighlighted"
+              @blur="closeSuggestions"
               placeholder="Search for a name or tax ID..."
               spellcheck="false"
               autocorrect="off"
