@@ -55,8 +55,9 @@ export default defineComponent({
 
     const formatShortDate = (isoDate: string | null): string => {
       if (!isoDate) return "";
-      const date = new Date(isoDate);
-      return date.toLocaleDateString(undefined, { year: "numeric", month: "short" });
+      const [year, month] = isoDate.slice(0, 7).split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return date.toLocaleDateString('en-US', { year: "numeric", month: "short" });
     };
 
     const formatYearMonth = (isoDate: string | null): string => {
