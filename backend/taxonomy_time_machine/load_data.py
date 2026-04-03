@@ -222,6 +222,13 @@ def main() -> None:
         count = session.query(TaxonomyModel).count()
         print(f"taxonomy version table now has {count:,} rows")
 
+    print("--- rebuilding FTS index")
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM name_fts"))
+        conn.execute(text("INSERT INTO name_fts(name) SELECT DISTINCT name FROM taxonomy WHERE name IS NOT NULL"))
+        conn.commit()
+    print("--- done")
+
 
 if __name__ == "__main__":
     main()
