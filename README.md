@@ -45,6 +45,9 @@ relic.
 uv venv
 uv sync
 
+# install project scripts (i.e., ttm-load)
+uv pip install -e .
+
 # fetch data, create events.db
 make
 

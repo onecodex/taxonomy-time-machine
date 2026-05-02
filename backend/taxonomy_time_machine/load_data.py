@@ -10,11 +10,13 @@ from sqlalchemy.orm import sessionmaker
 from taxonomy import Taxonomy
 from tqdm import tqdm
 
-from .event import Event, EventName
 from . import TimeMachine
+from .event import Event, EventName
+from .models import (
+    Taxonomy as TaxonomyModel,
+)
 from .models import (
     TaxonomySource,
-    Taxonomy as TaxonomyModel,
 )
 
 
@@ -38,6 +40,27 @@ def load_current_tax_id_to_node(database_path: str) -> dict[str, Event]:
     """Load current tax ID to node state"""
 
     return TimeMachine(database_path=database_path).get_most_recent_events()
+
+
+def load_merged_dump(dump_path: Path) -> dict[str, str]:
+    """Load and parse merged.dmp to identify old tax IDs that have been merge into new ones.
+    The merged format uses \t|\t as a field separator and \t|\n as the row terminator and
+    organizes the data as old_taxid -> new_taxid.
+    """
+
+    merged_path = dump_path / "merged.dmp"
+    merges = {}
+
+    if not merged_path.exists():
+        return merges
+
+    with open(merged_path) as f:
+        for line in f:
+            # strip the row terminator, then split the fields
+            old, new = line.rstrip("\t|\n").split("\t|\t")
+            merges[old] = new
+
+    return merges
 
 
 def setup_sqlite_performance(engine):
@@ -107,6 +130,7 @@ def main() -> None:
             taxonomy_source_id = taxonomy_source.id
 
         tax = Taxonomy.from_ncbi(str(taxdump_path))
+        merged = load_merged_dump(taxdump_path)
         tqdm.write(f"--- loaded {taxdump_path}: {tax}")
 
         total_seen_taxa += len(tax)
@@ -162,18 +186,31 @@ def main() -> None:
         # append deletions
         if last_tax_ids is not None:
             for tax_id in last_tax_ids - seen_tax_ids:
-                # Store the parent_id so that we can find the deletion events by parent_id
-                # (useful for excluding deleted children from get_children)
-                events.append(
-                    Event(
-                        event_name=EventName.Delete,
-                        tax_id=tax_id,
-                        # taxonomy library type annotation is wrong?
-                        parent_id=last_tax[tax_id].parent if last_tax else None,  # mypy: ignore
-                        version_date=taxdump_date,
-                        taxonomy_source_id=taxonomy_source_id,
+                # this taxid was merged into another taxid
+                if tax_id in merged:
+                    events.append(
+                        Event(
+                            event_name=EventName.Merge,
+                            tax_id=tax_id,
+                            parent_id=last_tax[tax_id].parent if last_tax else None,  # mypy: ignore
+                            version_date=taxdump_date,
+                            taxonomy_source_id=taxonomy_source_id,
+                            merged_into_id=merged[tax_id],
+                        )
                     )
-                )
+                else:
+                    # Store the parent_id so that we can find the deletion events by parent_id
+                    # (useful for excluding deleted children from get_children)
+                    events.append(
+                        Event(
+                            event_name=EventName.Delete,
+                            tax_id=tax_id,
+                            # taxonomy library type annotation is wrong?
+                            parent_id=last_tax[tax_id].parent if last_tax else None,  # mypy: ignore
+                            version_date=taxdump_date,
+                            taxonomy_source_id=taxonomy_source_id,
+                        )
+                    )
 
                 # remove from tax_id_to_node in case this tax ID gets re-created
                 del tax_id_to_node[tax_id]
@@ -216,6 +253,7 @@ def main() -> None:
                     rank=item["rank"],
                     name=item["name"],
                     taxonomy_source_id=item["taxonomy_source_id"],
+                    merged_into_id=item["merged_into_id"],
                 )
                 for item in batch
             ]
@@ -231,7 +269,11 @@ def main() -> None:
     print("--- rebuilding FTS index")
     with engine.connect() as conn:
         conn.execute(text("DELETE FROM name_fts"))
-        conn.execute(text("INSERT INTO name_fts(name) SELECT DISTINCT name FROM taxonomy WHERE name IS NOT NULL"))
+        conn.execute(
+            text(
+                "INSERT INTO name_fts(name) SELECT DISTINCT name FROM taxonomy WHERE name IS NOT NULL"
+            )
+        )
         conn.commit()
     print("--- done")
 
