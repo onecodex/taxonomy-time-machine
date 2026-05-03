@@ -1343,13 +1343,13 @@ export default defineComponent({
   }
 
   .change-badge--merged {
-    background: #163029;
-    color: #7fa89a;
+    background: #0d2b3d;
+    color: #a6d8f5;
   }
 
   .merged-badge {
-    background: #163029;
-    color: #7fa89a;
+    background: #0d2b3d;
+    color: #a6d8f5;
   }
 
   .deleted-badge {
