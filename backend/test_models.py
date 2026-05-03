@@ -179,3 +179,59 @@ def test_lineage(db):
         "Bacteroidetes",
         "Bacteria",
     ]
+
+
+def test_get_merge_events(db):
+    events = db.get_events("10010")
+    assert events
+    assert len(events) == 2
+    assert events[1].merged_into_id == "11000"
+
+
+def test_get_lineage_after_merge(db):
+    # before the merge
+    events = db.get_lineage(tax_id="10010", as_of=D1)
+    assert [x.name for x in events] == [
+        "Taxon A",
+        "Genus Taxon",
+        "Phylum Taxon",
+        "Bacteria",
+    ]
+    assert [e for e in events if e.name == "Taxon A"][0].event_name is EventName.Create
+
+    # after the merge
+    events = db.get_lineage(tax_id="10010", as_of=D2)
+    assert [x.name for x in events] == [
+        "Taxon A",
+        "Genus Taxon",
+        "Phylum Taxon",
+        "Bacteria",
+    ]
+    assert [e for e in events if e.name == "Taxon A"][0].event_name is EventName.Merge
+    assert [e for e in events if e.name == "Taxon A"][0].merged_into_id == "11000"
+
+
+def test_get_children_merged_node(db):
+    # taxon a, before merge
+    children = db.get_children("10001", as_of=D1)
+    assert len(children) == 2
+
+    # after merge
+    children = db.get_children("10001", as_of=D2)
+    assert len(children) == 1
+    assert children[0].tax_id == "11000"
+
+
+def test_get_versions_merged(db):
+    # taxon a
+    versions = db.get_versions("10010")
+    assert len(versions) == 2
+
+    events = db.get_events("10010", as_of=versions[0])
+    assert len(events) == 1
+    assert events[0].event_name is EventName.Create
+
+    events = db.get_events("10010", as_of=versions[1])
+    assert len(events) == 2
+    assert events[0].event_name is EventName.Create
+    assert events[1].event_name is EventName.Merge
