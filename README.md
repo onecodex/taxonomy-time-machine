@@ -101,7 +101,8 @@ curl 'https://taxonomy.onecodex.com/api/lineage?tax_id=821&version_date=2014-10-
     "parent_id": 1,
     "rank": "no rank",
     "tax_id": 131567,
-    "version_date": "2010-10-22T00:00:00"
+    "version_date": "2010-10-22T00:00:00",
+    "merged_into_id": null
   },
 ]
 ```
@@ -126,7 +127,8 @@ curl 'https://taxonomy.onecodex.com/api/search?query=bacteroides%20dorei%CAG' | 
     "parent_id": 139043,
     "rank": "species",
     "tax_id": 1263042,
-    "version_date": "2014-08-01T00:00:00"
+    "version_date": "2014-08-01T00:00:00",
+    "merged_into_id": null
   }
 ]
 ```
@@ -151,7 +153,8 @@ curl 'https://taxonomy.onecodex.com/api/events?tax_id=821' | jq
     "parent_id": 816,
     "rank": "species",
     "tax_id": 821,
-    "version_date": "2010-10-22T00:00:00"
+    "version_date": "2010-10-22T00:00:00",
+    "merged_into_id": null
   },
   ...
 ]
@@ -180,7 +183,8 @@ curl 'https://taxonomy.onecodex.com/api/children?tax_id=1&version_date=2010-10-2
     "parent_id": 1,
     "rank": "no rank",
     "tax_id": 12884,
-    "version_date": "2010-10-22T00:00:00"
+    "version_date": "2010-10-22T00:00:00",
+    "merged_into_id": null
   },
 ]
 ```
