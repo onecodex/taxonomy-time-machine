@@ -11,6 +11,7 @@ interface TaxonVersion {
   rank: string | null;
   version_date: string | null;
   event_name?: string;
+  merged_into_id?: string | null;
 }
 
 export default defineComponent({
@@ -623,12 +624,22 @@ export default defineComponent({
         <span class="taxon-info-box__name">{{ lineage[lineage.length - 1].name }}</span>
         <span class="taxon-info-box__id">tax ID {{ taxId }}</span>
         <span class="taxon-info-box__status">
-          <template v-if="isLatestVersion">
-            Most recent version
+          <template v-if="currentTaxon.event_name === 'EventName.Merge'">
+            As of {{ formatDisplayDate(version) }} ·
+            <span class="change-badge change-badge--merged">
+              merged into
+              <a href="#" @click.prevent="updateTaxId(currentTaxon.merged_into_id)">
+                {{ currentTaxon.merged_into_id }}
+              </a>
+              on {{ formatYearMonth(currentTaxon.version_date) }}
+            </span>
           </template>
           <template v-else-if="currentTaxon.event_name === 'EventName.Delete'">
             As of {{ formatDisplayDate(version) }} ·
             <span class="change-badge change-badge--deleted">deleted on {{ formatYearMonth(currentTaxon.version_date) }}</span>
+          </template>
+          <template v-else-if="isLatestVersion">
+            Most recent version
           </template>
           <template v-else-if="taxonChanges && (taxonChanges.nameChanged || taxonChanges.lineageChanged)">
             As of {{ formatDisplayDate(version) }} ·
@@ -661,15 +672,24 @@ export default defineComponent({
               </tr>
             </thead>
             <tbody>
-              <tr v-for="node in lineage" :key="node.tax_id" :class="{ 'lineage-row--deleted': node.event_name === 'EventName.Delete' }">
+              <tr v-for="node in lineage" :key="node.tax_id" :class="{ 'lineage-row--deleted': node.event_name === 'EventName.Delete' || node.event_name === 'EventName.Merge' }">
                 <td>
-                  <span class="rank-badge" :class="getRankClass(node.rank)" :style="node.event_name === 'EventName.Delete' ? 'opacity: 0.5' : ''">
+                  <span class="rank-badge" :class="getRankClass(node.rank)" :style="(node.event_name === 'EventName.Delete' || node.event_name === 'EventName.Merge') ? 'opacity: 0.5' : ''">
                     {{ node.rank }}
                   </span>
                 </td>
                 <td class="name-cell">
-                  <span :style="node.event_name === 'EventName.Delete' ? 'text-decoration: line-through; opacity: 0.6' : ''">{{ node.name }}</span>
-                  <span v-if="node.event_name === 'EventName.Delete'" class="deleted-badge">deleted {{ formatShortDate(node.version_date) }}</span>
+                  <span :style="(node.event_name === 'EventName.Delete' || node.event_name === 'EventName.Merge') ? 'text-decoration: line-through; opacity: 0.6' : ''">{{ node.name }}</span>
+                  <span v-if="node.event_name === 'EventName.Delete'" class="deleted-badge">
+                      deleted {{ formatShortDate(node.version_date) }}
+                  </span>
+                  <span v-else-if="node.event_name === 'EventName.Merge'" class="merged-badge">
+                      merged into
+                      <a href="#" @click.prevent="updateTaxId(node.merged_into_id)" class="tax-id-link">
+                          {{ node.merged_into_id }}
+                      </a>
+                      {{ formatShortDate(node.version_date) }}
+                  </span>
                 </td>
                 <td>
                   <a
@@ -1252,6 +1272,23 @@ export default defineComponent({
   color: #c0392b;
 }
 
+.change-badge--merged {
+  background: #e6c7a8;
+  color: #7fa89a;
+}
+
+.merged-badge {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0.1em 0.45em;
+  border-radius: 4px;
+  font-size: 0.75em;
+  font-weight: 600;
+  background: #e6c7a8;
+  color: #7fa89a;
+  vertical-align: middle;
+}
+
 .deleted-badge {
   display: inline-block;
   margin-left: 0.5em;
@@ -1305,9 +1342,20 @@ export default defineComponent({
     color: #ff8a80;
   }
 
+  .change-badge--merged {
+    background: #163029;
+    color: #7fa89a;
+  }
+
+  .merged-badge {
+    background: #163029;
+    color: #7fa89a;
+  }
+
   .deleted-badge {
     background: #4a1a1a;
     color: #ff8a80;
   }
+
 }
 </style>
