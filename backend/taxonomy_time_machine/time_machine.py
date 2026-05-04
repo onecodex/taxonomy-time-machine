@@ -1,8 +1,8 @@
-from datetime import datetime
-from functools import lru_cache
 import logging
 import sqlite3
 import time
+from datetime import datetime
+from functools import lru_cache
 from typing import Literal
 
 from .event import Event, EventName
@@ -173,7 +173,11 @@ class TimeMachine:
         # *still* query_tax_id. remove these rows
 
         child_tax_ids = {e.tax_id for e in parent_events}
-        deleted_tax_ids = {e.tax_id for e in parent_events if e.event_name is EventName.Delete}
+        unused_tax_ids = {
+            e.tax_id
+            for e in parent_events
+            if (e.event_name is EventName.Delete) or (e.event_name is EventName.Merge)
+        }
         child_events = []
 
         # TODO: do this in a single db query
@@ -181,20 +185,20 @@ class TimeMachine:
             if ee := self.get_events(tax_id=child_tax_id, as_of=as_of, query_key="tax_id"):
                 last_event = ee[-1]
 
-                # catch tax IDs that were deleted then re-created
+                # catch tax IDs that were deleted/merged then re-created
                 if (
-                    last_event.event_name is not EventName.Delete
-                    and last_event.tax_id in deleted_tax_ids
+                    last_event.event_name not in {EventName.Delete, EventName.Merge}
+                    and last_event.tax_id in unused_tax_ids
                 ):
-                    deleted_tax_ids.remove(last_event.tax_id)
+                    unused_tax_ids.remove(last_event.tax_id)
+
                 child_events.append(ee[-1])
 
         keep_tax_ids = {c.tax_id for c in child_events if c.parent_id == tax_id}
         events = [e for e in parent_events if e.tax_id in keep_tax_ids]
 
         # 3. remove any deleted rows
-        events = [e for e in events if e.tax_id not in deleted_tax_ids]
-
+        events = [e for e in events if e.tax_id not in unused_tax_ids]
         # for each tax ID, get the *latest* parent_id
         # if that parent_id == tax_id then keep it
 
@@ -215,8 +219,8 @@ class TimeMachine:
         # make sure the row is still a child of tax_id
         rows = [r for r in latest_row_by_tax_id.values() if r.parent_id == tax_id]
 
-        # remove anything that got deleted
-        rows = [r for r in rows if r.event_name is not EventName.Delete]
+        # remove anything that got deleted/merged
+        rows = [r for r in rows if r.event_name not in {EventName.Delete, EventName.Merge}]
 
         self._profile("get_children", _profile_start, time.perf_counter())
         return rows
@@ -233,16 +237,16 @@ class TimeMachine:
         changed"""
         _profile_start = time.perf_counter()
 
-        # Find deletion date for this taxon (if deleted)
+        # Find deletion/merge date for this taxon (if deleted or merged)
         own_events = self.get_events(tax_id=tax_id)
         deletion_date = None
-        if own_events and own_events[-1].event_name == EventName.Delete:
+        if own_events and (own_events[-1].event_name in (EventName.Delete, EventName.Merge)):
             deletion_date = own_events[-1].version_date
 
         events = self._get_all_events_recursive(tax_id=tax_id)
         version_dates = sorted({e.version_date for e in events})
 
-        # Don't show lineage changes that happened after this taxon was deleted
+        # Don't show lineage changes that happened after this taxon was deleted/merged
         if deletion_date:
             version_dates = [d for d in version_dates if d <= deletion_date]
 
@@ -292,7 +296,9 @@ class TimeMachine:
                     break
 
             if parent is not None:
-                if parent.event_name == EventName.Delete:
+                if (parent.event_name == EventName.Delete) or (
+                    parent.event_name == EventName.Merge
+                ):
                     last_known = next((e for e in reversed(events) if e.name), None)
                     if last_known:
                         parent = Event(
@@ -302,6 +308,7 @@ class TimeMachine:
                             name=last_known.name,
                             rank=last_known.rank,
                             parent_id=parent.parent_id,
+                            merged_into_id=parent.merged_into_id,
                         )
                 lineage.append(parent)
             else:

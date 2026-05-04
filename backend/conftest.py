@@ -213,6 +213,48 @@ EVENTS = [
         "event_name": "create",
         "version_date": D1,
     },
+    # Taxon A is merged into Taxon B
+    {
+        "tax_id": "10000",
+        "name": "Phylum Taxon",
+        "parent_id": "2",
+        "rank": "phylum",
+        "event_name": "create",
+        "version_date": D1,
+    },
+    {
+        "tax_id": "10001",
+        "name": "Genus Taxon",
+        "parent_id": "10000",
+        "rank": "genus",
+        "event_name": "create",
+        "version_date": D1,
+    },
+    {
+        "tax_id": "10010",
+        "name": "Taxon A",
+        "parent_id": "10001",
+        "rank": "species",
+        "event_name": "create",
+        "version_date": D1,
+    },
+    {
+        "tax_id": "11000",
+        "name": "Taxon B",
+        "parent_id": "10001",
+        "rank": "species",
+        "event_name": "create",
+        "version_date": D1,
+    },
+    {
+        "tax_id": "10010",
+        "name": "Taxon A",
+        "parent_id": "10001",
+        "rank": "species",
+        "event_name": "merge",
+        "version_date": D2,
+        "merged_into_id": "11000",
+    },
 ]
 
 

@@ -108,6 +108,10 @@ class TaxonSchema(ma.Schema):
         allow_none=True,
         metadata={"description": "Parent taxon ID", "example": "9605"},
     )
+    merged_into_id = ma.fields.String(
+        allow_none=True,
+        metadata={"description": "Tax ID this taxon was merged into", "example": "9606"},
+    )
     version_date = ma.fields.NaiveDateTime(
         metadata={
             "description": "ISO8601-formatted datetime",

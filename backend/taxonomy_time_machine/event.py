@@ -1,12 +1,12 @@
-from datetime import datetime
-
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 
 
 class EventName(Enum):
     Create = "create"
     Delete = "delete"
+    Merge = "merge"
     Update = "alter"  # TODO: change me to Update
 
 
@@ -20,6 +20,7 @@ class Event:
     name: str | None = None
     rank: str | None = None
     parent_id: str | None = None
+    merged_into_id: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -36,6 +37,7 @@ class Event:
             rank=data.get("rank"),
             parent_id=data.get("parent_id"),
             taxonomy_source_id=data.get("taxonomy_source_id"),
+            merged_into_id=data.get("merged_into_id"),
         )
 
     def to_dict(self) -> dict:
@@ -47,4 +49,5 @@ class Event:
             "name": self.name,
             "rank": self.rank,
             "taxonomy_source_id": self.taxonomy_source_id,
+            "merged_into_id": self.merged_into_id,
         }

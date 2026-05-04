@@ -30,6 +30,7 @@ class Taxonomy(Base):
     parent_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     rank: Mapped[str | None] = mapped_column(Text, nullable=True)
     name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    merged_into_id: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationship to source
     source: Mapped[TaxonomySource] = relationship(back_populates="taxonomy_records")
