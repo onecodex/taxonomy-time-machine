@@ -628,7 +628,7 @@ export default defineComponent({
             As of {{ formatDisplayDate(version) }} ·
             <span class="change-badge change-badge--merged">
               merged into
-              <a href="#" @click.prevent="updateTaxId(currentTaxon.merged_into_id)">
+              <a href="#" @click.prevent="updateTaxId(currentTaxon.merged_into_id!)">
                 {{ currentTaxon.merged_into_id }}
               </a>
               on {{ formatYearMonth(currentTaxon.version_date) }}
@@ -685,7 +685,7 @@ export default defineComponent({
                   </span>
                   <span v-else-if="node.event_name === 'EventName.Merge'" class="merged-badge">
                       merged into
-                      <a href="#" @click.prevent="updateTaxId(node.merged_into_id)" class="tax-id-link">
+                      <a href="#" @click.prevent="updateTaxId(node.merged_into_id!)" class="tax-id-link">
                           {{ node.merged_into_id }}
                       </a>
                       {{ formatShortDate(node.version_date) }}
