@@ -477,6 +477,7 @@ export default defineComponent({
       query,
       error,
       onInput,
+      navigateToTaxon,
       updateTaxId,
       updateVersion,
       setTaxId,
@@ -628,7 +629,7 @@ export default defineComponent({
             As of {{ formatDisplayDate(version) }} ·
             <span class="change-badge change-badge--merged">
               merged into
-              <a href="#" @click.prevent="updateTaxId(currentTaxon.merged_into_id!)">
+              <a href="#" @click.prevent="navigateToTaxon(currentTaxon.merged_into_id)">
                 {{ currentTaxon.merged_into_id }}
               </a>
               on {{ formatYearMonth(currentTaxon.version_date) }}
